@@ -21,9 +21,9 @@ namespace Soe.Reactive
         /// <typeparam name="T">The type of the elements of the data source</typeparam>
         /// <returns>A representation of a conditional data flow controller</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Mutator<T, WhereConditionalMutator<T>> Where<T>(this IObservable<T> observable, Func<T, bool> predicate)
+        public static Mutator<T, IObservable<T>, WhereConditionalMutator<T>> Where<T>(this IObservable<T> observable, Func<T, bool> predicate)
         {
-            return new Mutator<T, WhereConditionalMutator<T>>(observable, new WhereConditionalMutator<T>(predicate));
+            return new Mutator<T, IObservable<T>, WhereConditionalMutator<T>>(observable, new WhereConditionalMutator<T>(predicate));
         }
     }
 }

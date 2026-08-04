@@ -22,9 +22,9 @@ namespace Soe.Reactive
         /// <typeparam name="TOut">The type of the value returned by selector</typeparam>
         /// <returns>A representation of a data projection unit</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Mutator<TIn, TOut, SelectProjectionMutator<TIn, TOut>> Select<TIn, TOut>(this IObservable<TIn> observable, Func<TIn, TOut> selector)
+        public static Mutator<TIn, TOut, IObservable<TIn>, SelectProjectionMutator<TIn, TOut>> Select<TIn, TOut>(this IObservable<TIn> observable, Func<TIn, TOut> selector)
         {
-            return new Mutator<TIn, TOut, SelectProjectionMutator<TIn, TOut>>(observable, new SelectProjectionMutator<TIn, TOut>(selector));
+            return new Mutator<TIn, TOut, IObservable<TIn>, SelectProjectionMutator<TIn, TOut>>(observable, new SelectProjectionMutator<TIn, TOut>(selector));
         }
     }
 }

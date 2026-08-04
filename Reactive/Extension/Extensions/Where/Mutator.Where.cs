@@ -21,13 +21,15 @@ namespace Soe.Reactive
         /// <typeparam name="T">The type of the elements of the data source</typeparam>
         /// <returns>A representation of a conditional data flow controller</returns>
         /// <typeparam name="MutatorT">A conditional data flow controller</typeparam>
+        /// <typeparam name="ObservableT">An observable data source to modify</typeparam>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Mutator<T, WhereConditionalMutator<T, MutatorT>> Where<T, MutatorT>(this Mutator<T, MutatorT> mutator, Func<T, bool> predicate)
+        public static Mutator<T, ObservableT, WhereConditionalMutator<T, MutatorT>> Where<T, ObservableT, MutatorT>(this Mutator<T, ObservableT, MutatorT> mutator, Func<T, bool> predicate)
+            where ObservableT : class
             where MutatorT : struct, IGatingMutator<T>
         {
-            return new Mutator<T, WhereConditionalMutator<T, MutatorT>>(mutator.Source, new WhereConditionalMutator<T, MutatorT>(mutator.Instance, predicate));
+            return new Mutator<T, ObservableT, WhereConditionalMutator<T, MutatorT>>(mutator.Source, new WhereConditionalMutator<T, MutatorT>(mutator.Instance, predicate));
         }
-        
+
         /// <summary>
         /// Filters a sequence of values based on a predicate
         /// </summary>
@@ -37,11 +39,13 @@ namespace Soe.Reactive
         /// <typeparam name="TOut">The transformed type of the elements of the data source</typeparam>
         /// <returns>A representation of a conditional data flow controller</returns>
         /// <typeparam name="MutatorT">A conditional data flow controller</typeparam>
+        /// <typeparam name="ObservableT">An observable data source to modify</typeparam>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Mutator<TIn, TOut, WhereConditionalMutator<TIn,TOut, MutatorT>> Where<TIn, TOut, MutatorT>(this Mutator<TIn, TOut, MutatorT> mutator, Func<TOut, bool> predicate)
+        public static Mutator<TIn, TOut, ObservableT, WhereConditionalMutator<TIn,TOut, MutatorT>> Where<TIn, TOut, ObservableT, MutatorT>(this Mutator<TIn, TOut, ObservableT, MutatorT> mutator, Func<TOut, bool> predicate)
+            where ObservableT : class
             where MutatorT : struct, IProjectionMutator<TIn, TOut>
         {
-            return new Mutator<TIn, TOut, WhereConditionalMutator<TIn, TOut, MutatorT>>(mutator.Source, new WhereConditionalMutator<TIn, TOut, MutatorT>(mutator.Instance, predicate));
+            return new Mutator<TIn, TOut, ObservableT, WhereConditionalMutator<TIn, TOut, MutatorT>>(mutator.Source, new WhereConditionalMutator<TIn, TOut, MutatorT>(mutator.Instance, predicate));
         }
     }
 }

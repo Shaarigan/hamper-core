@@ -22,9 +22,9 @@ namespace Soe.Reactive
         /// <typeparam name="TValue">The type of the elements of the data source</typeparam>
         /// <returns>A representation of a data projection unit</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Mutator<TValue, TKey, TValue, GroupProjectionMutator<TKey, TValue>> GroupBy<TKey, TValue>(this IObservable<TValue> observable, Func<TValue, TKey> selector)
+        public static Mutator<TValue, TKey, TValue, IObservable<TValue>, GroupProjectionMutator<TKey, TValue>> GroupBy<TKey, TValue>(this IObservable<TValue> observable, Func<TValue, TKey> selector)
         {
-            return new Mutator<TValue, TKey, TValue, GroupProjectionMutator<TKey, TValue>>(observable, new  GroupProjectionMutator<TKey, TValue>(selector));
+            return new Mutator<TValue, TKey, TValue, IObservable<TValue>, GroupProjectionMutator<TKey, TValue>>(observable, new  GroupProjectionMutator<TKey, TValue>(selector));
         }
         
         /// <summary>
@@ -38,9 +38,9 @@ namespace Soe.Reactive
         /// <typeparam name="TValue">The type of the transformed elements of the data source</typeparam>
         /// <returns>A representation of a data projection unit</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Mutator<TIn, TKey, TValue, GroupProjectionMutator<TIn, TKey, TValue>> GroupBy<TIn, TKey, TValue>(this IObservable<TIn> observable, Func<TIn, TKey> keySelector, Func<TIn, TValue> valueSelector)
+        public static Mutator<TIn, TKey, TValue, IObservable<TIn>, GroupProjectionMutator<TIn, TKey, TValue>> GroupBy<TIn, TKey, TValue>(this IObservable<TIn> observable, Func<TIn, TKey> keySelector, Func<TIn, TValue> valueSelector)
         {
-            return new Mutator<TIn, TKey, TValue, GroupProjectionMutator<TIn, TKey, TValue>>(observable, new  GroupProjectionMutator<TIn, TKey, TValue>(keySelector, valueSelector));
+            return new Mutator<TIn, TKey, TValue, IObservable<TIn>, GroupProjectionMutator<TIn, TKey, TValue>>(observable, new  GroupProjectionMutator<TIn, TKey, TValue>(keySelector, valueSelector));
         }
     }
 }

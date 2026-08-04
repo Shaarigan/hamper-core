@@ -28,7 +28,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TOut, MutatorT> mutator, ObservableStrategy<TOut, DispatchingStrategy, SubscriptionStrategy> strategy, out IDisposable disposable)
+        public static Observable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TOut, IObservable<TIn>, MutatorT> mutator, ObservableStrategy<TOut, DispatchingStrategy, SubscriptionStrategy> strategy, out IDisposable disposable)
             where MutatorT : struct, IProjectionMutator<TIn, TOut>
             where DispatchingStrategy : struct, IDispatchingStrategy<TOut>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<TOut>
@@ -51,7 +51,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TOut, MutatorT> mutator, ObservableStrategy<TOut, DispatchingStrategy, SubscriptionStrategy> strategy)
+        public static Observable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TOut, IObservable<TIn>, MutatorT> mutator, ObservableStrategy<TOut, DispatchingStrategy, SubscriptionStrategy> strategy)
             where MutatorT : struct, IProjectionMutator<TIn, TOut>
             where DispatchingStrategy : struct, IDispatchingStrategy<TOut>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<TOut>
@@ -74,7 +74,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TOut, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers, out IDisposable disposable)
+        public static Observable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TOut, IObservable<TIn>, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers, out IDisposable disposable)
             where MutatorT : struct, IProjectionMutator<TIn, TOut>
             where DispatchingStrategy : struct, IDispatchingStrategy<TOut>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<TOut>
@@ -95,7 +95,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TOut, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers)
+        public static Observable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TOut, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TOut, IObservable<TIn>, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers)
             where MutatorT : struct, IProjectionMutator<TIn, TOut>
             where DispatchingStrategy : struct, IDispatchingStrategy<TOut>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<TOut>
@@ -120,7 +120,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TKey, TValue, MutatorT> mutator, ObservableStrategy<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> strategy, out IDisposable disposable)
+        public static Observable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TKey, TValue, IObservable<TIn>, MutatorT> mutator, ObservableStrategy<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> strategy, out IDisposable disposable)
             where MutatorT : struct, IProjectionMutator<TIn, TKey, TValue>
             where DispatchingStrategy : struct, IDispatchingStrategy<TValue>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<TKey, TValue>
@@ -144,7 +144,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TKey, TValue, MutatorT> mutator, ObservableStrategy<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> strategy)
+        public static Observable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TKey, TValue, IObservable<TIn>, MutatorT> mutator, ObservableStrategy<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> strategy)
             where MutatorT : struct, IProjectionMutator<TIn, TKey, TValue>
             where DispatchingStrategy : struct, IDispatchingStrategy<TValue>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<TKey, TValue>
@@ -168,7 +168,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TKey, TValue, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers, out IDisposable disposable)
+        public static Observable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TKey, TValue, IObservable<TIn>, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers, out IDisposable disposable)
             where MutatorT : struct, IProjectionMutator<TIn, TKey, TValue>
             where DispatchingStrategy : struct, IDispatchingStrategy<TValue>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<TKey, TValue>
@@ -190,7 +190,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TKey, TValue, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers)
+        public static Observable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<TIn, TKey, TValue, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<TIn, TKey, TValue, IObservable<TIn>, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers)
             where MutatorT : struct, IProjectionMutator<TIn, TKey, TValue>
             where DispatchingStrategy : struct, IDispatchingStrategy<TValue>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<TKey, TValue>
@@ -213,7 +213,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<T, MutatorT> mutator, ObservableStrategy<T, DispatchingStrategy, SubscriptionStrategy> strategy, out IDisposable disposable)
+        public static Observable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<T, IObservable<T>, MutatorT> mutator, ObservableStrategy<T, DispatchingStrategy, SubscriptionStrategy> strategy, out IDisposable disposable)
             where MutatorT : struct, IGatingMutator<T>
             where DispatchingStrategy : struct, IDispatchingStrategy<T>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<T>
@@ -235,7 +235,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<T, MutatorT> mutator, ObservableStrategy<T, DispatchingStrategy, SubscriptionStrategy> strategy)
+        public static Observable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<T, IObservable<T>, MutatorT> mutator, ObservableStrategy<T, DispatchingStrategy, SubscriptionStrategy> strategy)
             where MutatorT : struct, IGatingMutator<T>
             where DispatchingStrategy : struct, IDispatchingStrategy<T>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<T>
@@ -257,7 +257,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<T, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers, out IDisposable disposable)
+        public static Observable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<T, IObservable<T>, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers, out IDisposable disposable)
             where MutatorT : struct, IGatingMutator<T>
             where DispatchingStrategy : struct, IDispatchingStrategy<T>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<T>
@@ -277,7 +277,7 @@ namespace Soe.Reactive
         /// <typeparam name="SubscriptionStrategy">An object managing how subscribers are handled</typeparam>
         /// <returns>The materialized data processing unit attached to the source</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Observable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<T, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers)
+        public static Observable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy> AsObservable<T, MutatorT, DispatchingStrategy, SubscriptionStrategy>(this Mutator<T, IObservable<T>, MutatorT> mutator, DispatchingStrategy dispatcher, SubscriptionStrategy subscribers)
             where MutatorT : struct, IGatingMutator<T>
             where DispatchingStrategy : struct, IDispatchingStrategy<T>
             where SubscriptionStrategy : struct, ISubscriptionStrategy<T>

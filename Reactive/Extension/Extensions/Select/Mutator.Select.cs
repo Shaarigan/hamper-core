@@ -22,11 +22,13 @@ namespace Soe.Reactive
         /// <typeparam name="TOut">The type of the value returned by selector</typeparam>
         /// <typeparam name="MutatorT">A data projection unit</typeparam>
         /// <returns>A representation of a data projection unit</returns>
+        /// <typeparam name="ObservableT">An observable data source to modify</typeparam>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Mutator<TIn, TOut, SelectProjectionMutator<TIn, TOut, MutatorT>> Select<TIn, TOut, MutatorT>(this Mutator<TIn, MutatorT> mutator, Func<TIn, TOut> selector)
+        public static Mutator<TIn, TOut, ObservableT, SelectProjectionMutator<TIn, TOut, MutatorT>> Select<TIn, TOut, ObservableT, MutatorT>(this Mutator<TIn, ObservableT, MutatorT> mutator, Func<TIn, TOut> selector)
+            where ObservableT : class
             where MutatorT : struct, IGatingMutator<TIn>
         {
-            return new Mutator<TIn, TOut, SelectProjectionMutator<TIn, TOut, MutatorT>>(mutator.Source, new SelectProjectionMutator<TIn, TOut, MutatorT>(mutator.Instance, selector));
+            return new Mutator<TIn, TOut, ObservableT, SelectProjectionMutator<TIn, TOut, MutatorT>>(mutator.Source, new SelectProjectionMutator<TIn, TOut, MutatorT>(mutator.Instance, selector));
         }
         
         /// <summary>
@@ -39,11 +41,13 @@ namespace Soe.Reactive
         /// <typeparam name="TOut">The type of the value returned by selector</typeparam>
         /// <typeparam name="MutatorT">A data projection unit</typeparam>
         /// <returns>A representation of a data projection unit</returns>
+        /// <typeparam name="ObservableT">An observable data source to modify</typeparam>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Mutator<TIn, TOut, SelectProjectionMutator<TIn, TTmp, TOut, MutatorT>> Select<TIn, TTmp, TOut, MutatorT>(this Mutator<TIn, TTmp, MutatorT> mutator, Func<TTmp, TOut> selector)
+        public static Mutator<TIn, TOut, ObservableT, SelectProjectionMutator<TIn, TTmp, TOut, MutatorT>> Select<TIn, TTmp, TOut, ObservableT, MutatorT>(this Mutator<TIn, TTmp, ObservableT, MutatorT> mutator, Func<TTmp, TOut> selector)
+            where ObservableT : class
             where MutatorT : struct, IProjectionMutator<TIn, TTmp>
         {
-            return new Mutator<TIn, TOut, SelectProjectionMutator<TIn, TTmp, TOut, MutatorT>>(mutator.Source, new SelectProjectionMutator<TIn, TTmp, TOut, MutatorT>(mutator.Instance, selector));
+            return new Mutator<TIn, TOut, ObservableT, SelectProjectionMutator<TIn, TTmp, TOut, MutatorT>>(mutator.Source, new SelectProjectionMutator<TIn, TTmp, TOut, MutatorT>(mutator.Instance, selector));
         }
     }
 }
