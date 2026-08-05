@@ -19,17 +19,17 @@ namespace Soe.Reactive
     #else
     internal
     #endif
-    abstract class Source<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> : IObservable<TValue>
+    abstract class Source<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> : IObservable<TKey, TValue>
         where DispatchingStrategy : struct, IDispatchingStrategy<TValue>
         where SubscriptionStrategy : struct, ISubscriptionStrategy<TKey, TValue>
     {
-        private readonly struct DisposeHandler : IDisposeHandler<Source<TKey, TValue, DispatchingStrategy, SubscriptionStrategy>, IObserver<TValue>>
+        private readonly struct DisposeHandler : IDisposeHandler<Source<TKey, TValue, DispatchingStrategy, SubscriptionStrategy>, TKey, IObserver<TValue>>
         {
             /// <inheritdoc/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(Source<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> target, IObserver<TValue> instance)
+            public void Invoke(Source<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> target, in TKey key, IObserver<TValue> instance)
             {
-                target.strategy.Subscriptions.Remove(instance);
+                target.strategy.Subscriptions.Remove(key, instance);
             }
         }
         
@@ -98,11 +98,11 @@ namespace Soe.Reactive
 
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual IDisposable Subscribe(IObserver<TValue> observer)
+        public virtual IDisposable Subscribe(in TKey key, IObserver<TValue> observer)
         {
-            if (strategy.Subscriptions.Add(observer))
+            if (strategy.Subscriptions.Add(key, observer))
             {
-                return new Disposable<IObserver<TValue>, Source<TKey, TValue, DispatchingStrategy, SubscriptionStrategy>, DisposeHandler>(this, observer);
+                return new Disposable<TKey, IObserver<TValue>, Source<TKey, TValue, DispatchingStrategy, SubscriptionStrategy>, DisposeHandler>(this, key, observer);
             }
             else return Disposable.Empty;
         }

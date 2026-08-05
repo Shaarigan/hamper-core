@@ -29,4 +29,30 @@ namespace Soe.Reactive
         
         // ReSharper restore PureAttributeOnVoidMethod
     }
+    
+    /// <summary>
+    /// Handles the dispose operation performed on a generic disposable object
+    /// </summary>
+    #if EXPORT_HAMPER_CORE_REACTIVE
+    public
+    #else
+    internal
+    #endif
+    interface IDisposeHandler<in Target, TKey, in TValue>
+        where Target : class
+        where TValue : class
+    {
+        /// <summary>
+        /// The function invoked when the underlying object is disposed
+        /// </summary>
+        /// <param name="target">The target instance to perform the operation on</param>
+        /// <param name="key">The object that provides information about the observer</param>
+        /// <param name="instance">An instance parameter</param>
+        // ReSharper disable PureAttributeOnVoidMethod
+        
+        [Pure]
+        void Invoke(Target target, in TKey key, TValue instance);
+        
+        // ReSharper restore PureAttributeOnVoidMethod
+    }
 }

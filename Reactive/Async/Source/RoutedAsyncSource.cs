@@ -20,17 +20,17 @@ namespace Soe.Reactive
     #else
     internal
     #endif
-    abstract class AsyncSource<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> : IAsyncObservable<TValue>
+    abstract class AsyncSource<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> : IAsyncObservable<TKey, TValue>
         where DispatchingStrategy : struct, IAsyncDispatchingStrategy<TValue>
         where SubscriptionStrategy : struct, IAsyncSubscriptionStrategy<TKey, TValue>
     {
-        private readonly struct DisposeHandler : IDisposeHandler<AsyncSource<TKey, TValue, DispatchingStrategy, SubscriptionStrategy>, IAsyncObserver<TValue>>
+        private readonly struct DisposeHandler : IDisposeHandler<AsyncSource<TKey, TValue, DispatchingStrategy, SubscriptionStrategy>, TKey, IAsyncObserver<TValue>>
         {
             /// <inheritdoc/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(AsyncSource<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> target, IAsyncObserver<TValue> instance)
+            public void Invoke(AsyncSource<TKey, TValue, DispatchingStrategy, SubscriptionStrategy> target, in TKey key, IAsyncObserver<TValue> instance)
             {
-                target.strategy.Subscriptions.Remove(instance);
+                target.strategy.Subscriptions.Remove(key, instance);
             }
         }
         
@@ -105,11 +105,11 @@ namespace Soe.Reactive
 
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual IDisposable Subscribe(IAsyncObserver<TValue> observer)
+        public virtual IDisposable Subscribe(in TKey key, IAsyncObserver<TValue> observer)
         {
-            if (strategy.Subscriptions.Add(observer))
+            if (strategy.Subscriptions.Add(key, observer))
             {
-                return new Disposable<IAsyncObserver<TValue>, AsyncSource<TKey, TValue, DispatchingStrategy, SubscriptionStrategy>, DisposeHandler>(this, observer);
+                return new Disposable<TKey, IAsyncObserver<TValue>, AsyncSource<TKey, TValue, DispatchingStrategy, SubscriptionStrategy>, DisposeHandler>(this, key, observer);
             }
             else return Disposable.Empty;
         }

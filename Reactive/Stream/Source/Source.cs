@@ -17,7 +17,7 @@ namespace Soe.Reactive
     #else
     internal
     #endif
-    abstract class Source<T, DispatchingStrategy, SubscriptionStrategy> : IObservable<T>
+    abstract class Source<T, DispatchingStrategy, SubscriptionStrategy> : System.IObservable<T>
         where DispatchingStrategy : struct, IDispatchingStrategy<T>
         where SubscriptionStrategy : struct, ISubscriptionStrategy<T>
     {

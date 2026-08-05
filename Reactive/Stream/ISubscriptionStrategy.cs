@@ -67,8 +67,8 @@ namespace Soe.Reactive
     /// <summary>
     /// A management object controlling how the data source handles subscribers
     /// </summary>
-    /// <typeparam name="TKey"></typeparam>
-    /// <typeparam name="TValue"></typeparam>
+    /// <typeparam name="TKey">The object that provides information about the target subscriptions</typeparam>
+    /// <typeparam name="TValue">The object that provides notification information to observers</typeparam>
     #if EXPORT_HAMPER_CORE_REACTIVE
     public
     #else
@@ -87,9 +87,10 @@ namespace Soe.Reactive
         /// <summary>
         /// Tries to add a new observer to this object
         /// </summary>
+        /// <param name="key">The object that provides information about the observer</param>
         /// <param name="observer">An object to receive notifications</param>
         /// <returns>True if the observer was added successfully, false otherwise</returns>
-        bool Add(IObserver<TValue> observer);
+        bool Add(TKey key, IObserver<TValue> observer);
 
         /// <summary>
         /// Conditionally provides the underlying observers with notification data
@@ -121,7 +122,8 @@ namespace Soe.Reactive
         /// <summary>
         /// Removes an existing observer from this object
         /// </summary>
+        /// <param name="key">The object that provides information about the observer</param>
         /// <param name="observer">An object to receive notifications</param>
-        void Remove(IObserver<TValue> observer);
+        void Remove(TKey key, IObserver<TValue> observer);
     }
 }

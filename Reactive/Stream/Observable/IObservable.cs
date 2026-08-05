@@ -6,26 +6,6 @@ using System;
 namespace Soe.Reactive
 {
     /// <summary>
-    /// Defines a provider for asynchronous push-based notification
-    /// </summary>
-    /// <typeparam name="T">The object that provides notification information</typeparam>
-    #if EXPORT_HAMPER_CORE_REACTIVE
-    public
-    #else
-    internal
-    #endif
-    interface IAsyncObservable<out T>
-    {
-        /// <summary>
-        /// Notifies the provider that an observer is to receive notifications
-        /// </summary>
-        /// <param name="observer">The object that is to receive notifications</param>
-        /// <returns>A reference to an interface that allows observers to stop receiving notifications before
-        /// the provider has finished sending them</returns>
-        IDisposable Subscribe(IAsyncObserver<T> observer);
-    }
-    
-    /// <summary>
     /// Defines a provider for push-based notification
     /// </summary>
     /// <typeparam name="TValue">The object that provides notification information</typeparam>
@@ -35,7 +15,7 @@ namespace Soe.Reactive
     #else
     internal
     #endif
-    interface IAsyncObservable<TKey, out TValue>
+    interface IObservable<TKey, out TValue>
     {
         /// <summary>
         /// Notifies the provider that an observer is to receive notifications
@@ -44,6 +24,6 @@ namespace Soe.Reactive
         /// <param name="observer">The object that is to receive notifications</param>
         /// <returns>A reference to an interface that allows observers to stop receiving notifications before
         /// the provider has finished sending them</returns>
-        IDisposable Subscribe(in TKey key, IAsyncObserver<TValue> observer);
+        IDisposable Subscribe(in TKey key, IObserver<TValue> observer);
     }
 }
