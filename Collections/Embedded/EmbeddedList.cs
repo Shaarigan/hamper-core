@@ -17,6 +17,9 @@ namespace Soe.Collections.Embedded
     {
         private T[]? buffer;
 
+        /// <summary>
+        /// 
+        /// </summary>
         public int Capacity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -24,7 +27,9 @@ namespace Soe.Collections.Embedded
         }
 
         private int count;
-        
+        /// <summary>
+        /// 
+        /// </summary>
         public int Count
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -38,6 +43,10 @@ namespace Soe.Collections.Embedded
             get { return false; }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="index"></param>
         public ref T this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -60,9 +69,16 @@ namespace Soe.Collections.Embedded
             get { return buffer![index]; }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public EmbeddedList()
         { }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="capacity"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public EmbeddedList(int capacity)
         {
