@@ -98,5 +98,12 @@ namespace Soe.Composable
         {
             return value.GetHashCode();
         }
+
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override string ToString()
+        {
+            return $"{{Index: {index}, Version: {version}, Shard: {shard}, Flags: {flags}}}";
+        }
     }
 }

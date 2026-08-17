@@ -38,14 +38,14 @@ namespace Soe.Collections.Embedded
             {
                 this.buffer = buffer;
                 this.count = count;
-                this.index = 0;
+                this.index = -1;
             }
 
             /// <inheritdoc/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool MoveNext()
             {
-                if (index < count)
+                if (index + 1 < count)
                 {
                     index++;
                     return true;

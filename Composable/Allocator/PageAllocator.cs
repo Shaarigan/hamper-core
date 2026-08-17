@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Numerics;
@@ -51,12 +52,18 @@ namespace Soe.Composable
         /// <exception cref="IndexOutOfRangeException">The handle points to a location not in bounds of the page</exception>
         internal void Access(in MemoryHandle handle, int index, in EntityId entity)
         {
+            index *= sizeof(UInt64);
             Span<Chunk> list = chunks.AsSpan();
             if (handle.PageIndex < list.Length && handle.BlockIndex + handle.BlockSize <= PageSize)
             {
                 if(list[handle.PageIndex].Handler is MemoryMappedViewAccessor accessor)
                 {
                     accessor.Write(handle.BlockIndex + index, entity);
+                    
+                    #if DEBUG
+                    if(accessor.ReadUInt64(handle.BlockIndex + index) != entity)
+                        throw new Exception();
+                    #endif
                 }
                 else throw new InsufficientMemoryException();
             }
@@ -72,6 +79,7 @@ namespace Soe.Composable
         /// <exception cref="IndexOutOfRangeException">The handle points to a location not in bounds of the page</exception>
         internal EntityId Access(in MemoryHandle handle, int index)
         {
+            index *= sizeof(UInt64);
             Span<Chunk> list = chunks.AsSpan();
             if (handle.PageIndex < list.Length && handle.BlockIndex + handle.BlockSize <= PageSize)
             {
@@ -194,6 +202,14 @@ namespace Soe.Composable
                     if (list[handle.PageIndex].Handler is MemoryMappedViewAccessor accessor)
                     {
                         accessor.WriteArray(handle.BlockIndex + index, ids, 0, count);
+                        
+                        #if DEBUG
+                        for (int i = handle.BlockIndex + index; i < count; i++)
+                        {
+                            if (accessor.ReadUInt64(i * sizeof(UInt64)) != entity)
+                                throw new Exception();
+                        }
+                        #endif
                     }
                     else throw new InsufficientMemoryException();
                 }

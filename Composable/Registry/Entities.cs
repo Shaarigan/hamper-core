@@ -2,6 +2,8 @@
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Soe.Collections.Embedded;
 
@@ -12,7 +14,7 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    class Entities : SparseArray
+    class Entities : SparseArray, IEnumerable<EntityId>
     {
         private const int SHARD = 0;
 
@@ -34,6 +36,7 @@ namespace Soe.Composable
             get { return entities.Count; }
         }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Entities(PageAllocator allocator)
         {
             this.allocator = allocator;
@@ -64,7 +67,7 @@ namespace Soe.Composable
             }
             else
             {
-                entity = freeList;
+                entity = new EntityId(freeList.Index, freeList.Version + 1, freeList.Shard, EntityFlags.None);
                 int slot = entity.Index >> PageAllocator.BlockShift;
                 if (Find(slot, out handle))
                 {
@@ -77,6 +80,70 @@ namespace Soe.Composable
             
             allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, new EntityId(index, entity.Version, entity.Shard, entity.Flags));
             return entity;
+        }
+
+        public bool Dispose(EntityId entity)
+        {
+            if (Find(entity.Index, out Ref<MemoryHandle> handle))
+            {
+                EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
+                if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
+                {
+                    allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, freeList);
+                    freeList = new EntityId(entity.Index, entity.Version, entity.Shard, EntityFlags.Reserved);
+                    if (entityPtr.Index < Count - 1)
+                    {
+                        // Swap entity data with last entity
+                        EntityId swap = entities[Count - 1];
+                        if (Find(swap.Index, out handle))
+                        {
+                            EntityId tmp = allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask);
+                            allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.Shard, tmp.Flags));
+
+                            Swap(entityPtr.Index, tmp.Index);
+                        }
+                        else throw new AccessViolationException();
+                    }
+                    entities.RemoveAt(Count - 1);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void Swap(int oldIndex, int newIndex)
+        {
+            (entities[oldIndex], entities[newIndex]) = (entities[newIndex], entities[oldIndex]);
+        }
+        
+        public bool TryGet(EntityId entity, out EntityId result)
+        {
+            if (Find(entity.Index, out Ref<MemoryHandle> handle))
+            {
+                EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
+                if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
+                {
+                    result = entities[entityPtr.Index];
+                    return true;
+                }
+            }
+
+            result = EntityId.Invalid;
+            return false;
+        }
+
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IEnumerator<EntityId> GetEnumerator()
+        {
+            return entities.GetEnumerator();
+        }
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }
