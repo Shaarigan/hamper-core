@@ -93,6 +93,12 @@ namespace Soe.Collections.Embedded
             buffer![count - 1] = item;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlySpan<T> AsSpan()
+        {
+            return new ReadOnlySpan<T>(buffer, 0, count);
+        }
+
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()

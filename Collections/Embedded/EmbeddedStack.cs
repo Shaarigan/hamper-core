@@ -38,6 +38,12 @@ namespace Soe.Collections.Embedded
         {
             EnsureCapacity(capacity);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlySpan<T> AsSpan()
+        {
+            return new  ReadOnlySpan<T>(buffer, 0, count);
+        }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void EnsureCapacity(int capacity)

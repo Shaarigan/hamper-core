@@ -49,16 +49,19 @@ namespace Soe.Composable
         {
             Ref<MemoryHandle> handle;
             EntityId entity;
-
+            
             if (freeList == EntityId.Invalid)
             {
+                // Create new entity from current max entity ID
                 entity = new EntityId(maxID++, 0, SHARD, EntityFlags.None);
                 int slot = entity.Index >> PageAllocator.BlockShift;
                 if (!Find(slot, out handle))
                 {
+                    // Entity does not exist, add it to the sparse array
                     ref MemoryHandle tmp = ref Emplace(slot, Version);
                     if (!tmp.IsValid)
                     {
+                        // Block is uninitialized, we must initialize it first to prevent false positives
                         tmp = allocator.Allocate(PageAllocator.BlockSize);
                         allocator.InitializeBlock(tmp, 0, EntityId.Invalid);
                         handle = new Ref<MemoryHandle>(ref tmp);
@@ -67,10 +70,12 @@ namespace Soe.Composable
             }
             else
             {
+                // Use recyclable entity
                 entity = new EntityId(freeList.Index, freeList.Version + 1, freeList.Shard, EntityFlags.None);
                 int slot = entity.Index >> PageAllocator.BlockShift;
                 if (Find(slot, out handle))
                 {
+                    // Swap the recyclable entity with whatever is stored at its slot in the sparse array
                     freeList = allocator.Access(handle.Value, freeList.Index & PageAllocator.BlockMask);
                 }
                 else throw new AccessViolationException();
@@ -78,6 +83,7 @@ namespace Soe.Composable
             int index = entities.Count;
             entities.Add(entity);
             
+            // Write a modified version of entity to its slot in the sparse array so entity.Index -> dense index
             allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, new EntityId(index, entity.Version, entity.Shard, entity.Flags));
             return entity;
         }
@@ -86,6 +92,7 @@ namespace Soe.Composable
         {
             if (Find(entity.Index, out Ref<MemoryHandle> handle))
             {
+                // Check if entity is alive
                 EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
                 if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
                 {
@@ -117,10 +124,12 @@ namespace Soe.Composable
             (entities[oldIndex], entities[newIndex]) = (entities[newIndex], entities[oldIndex]);
         }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGet(EntityId entity, out EntityId result)
         {
             if (Find(entity.Index, out Ref<MemoryHandle> handle))
             {
+                // Check if entity is alive
                 EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
                 if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
                 {
