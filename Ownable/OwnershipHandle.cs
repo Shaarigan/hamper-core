@@ -2,23 +2,22 @@
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace Soe.Threading
 {
+    [StructLayout(LayoutKind.Explicit)]
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
     #endif
-    interface IOwnable
+    struct OwnershipHandle
     {
-        bool IsOwningThread
-        {
-            get;
-        }
+        [FieldOffset(0)]
+        public int OwningThreadId;
         
-        bool TryTakeOwnership();
-        
-        bool ReturnOwnership();
+        [FieldOffset(4)]
+        public UInt32 SynchronizationBarrierState;
     }
 }

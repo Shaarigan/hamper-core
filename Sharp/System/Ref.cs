@@ -30,6 +30,7 @@ namespace System
         /// Initializes a reference
         /// </summary>
         /// <param name="value">The reference to a value of type <typeparamref name="T"/></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Ref(ref T value)
         {
             this.value = ref value;

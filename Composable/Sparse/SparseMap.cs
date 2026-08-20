@@ -210,6 +210,7 @@ namespace Soe.Composable
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int GetDistance(int index)
         {
             int tmp = (data![index].Slot & moduloMask);

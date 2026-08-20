@@ -151,6 +151,7 @@ namespace Soe.Collections.Embedded
         { }
 
         /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(TKey key, TValue value)
         {
             int hash = key!.GetHashCode();
@@ -207,6 +208,7 @@ namespace Soe.Collections.Embedded
         }
 
         /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
             if (array.Length - arrayIndex >= count)
@@ -339,6 +341,7 @@ namespace Soe.Collections.Embedded
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int GetDistance(int index)
         {
             int tmp = (data![index].Hash & moduloMask);

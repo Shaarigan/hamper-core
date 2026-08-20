@@ -33,7 +33,7 @@ namespace Soe.Composable
         public ReadOnlySpan<EntityId> Entities
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return entities.AsSpan(); }
+            get { return entities.AsReadOnlySpan(); }
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

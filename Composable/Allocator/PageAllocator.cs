@@ -50,7 +50,8 @@ namespace Soe.Composable
         /// <param name="entity">The entity to write into memory</param>
         /// <exception cref="InsufficientMemoryException">The memory page was discarded or otherwise freed</exception>
         /// <exception cref="IndexOutOfRangeException">The handle points to a location not in bounds of the page</exception>
-        internal void Access(in MemoryHandle handle, int index, in EntityId entity)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Access(in MemoryHandle handle, int index, in EntityId entity)
         {
             index *= sizeof(UInt64);
             Span<Chunk> list = chunks.AsSpan();
@@ -77,7 +78,8 @@ namespace Soe.Composable
         /// <returns>The entity stored a the given index</returns>
         /// <exception cref="InsufficientMemoryException">The memory page was discarded or otherwise freed</exception>
         /// <exception cref="IndexOutOfRangeException">The handle points to a location not in bounds of the page</exception>
-        internal EntityId Access(in MemoryHandle handle, int index)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public EntityId Access(in MemoryHandle handle, int index)
         {
             index *= sizeof(UInt64);
             Span<Chunk> list = chunks.AsSpan();
@@ -221,6 +223,7 @@ namespace Soe.Composable
             }
         }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static int GetFirstFreeIndex(UInt64 freeList)
         {
             freeList = ~freeList;

@@ -60,6 +60,7 @@ namespace Soe.Composable
         /// <param name="slot">The slot index of the element</param>
         /// <param name="currentVersion">The array version before this operation</param>
         /// <returns>A reference to the memory handle the entity is stored in or empty</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected ref MemoryHandle Emplace(int slot, int currentVersion)
         {
             if (version == currentVersion || !Find(slot, out _))
@@ -99,6 +100,7 @@ namespace Soe.Composable
         /// </summary>
         /// <param name="capacity">The target capacity for this array to become</param>
         /// <remarks>The array resizes to powers of two only</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reserve(int capacity)
         {
             Array.Resize(ref data, Math.Max(4, capacity));

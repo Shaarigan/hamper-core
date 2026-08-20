@@ -4,40 +4,45 @@
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace Soe.Ownable
+namespace Soe.Threading
 {
-    #if EXPORT_HAMPER_CORE_OWNABLE
+    #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
     #endif
-    abstract class Ownable : IOwnable
+    abstract partial class Ownable : IOwnable
     {
-        private const int DefaultThread = -1;
-        
-        private int owningThread;
+        private OwnershipHandle handle;
 
-        
-        public bool IsOwner
+        protected ref OwnershipHandle Handle
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return (Volatile.Read(ref owningThread) == Thread.CurrentThread.ManagedThreadId); }
-        }
-
-        protected Ownable()
-        {
-            this.owningThread = DefaultThread;
+            get { return ref handle; }
         }
         
-
-        public bool TryTakeOwnership()
+        public bool IsOwningThread
         {
-            return false;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return Ownable.CheckIsOwningThread(ref handle); }
         }
 
-        public void ReturnOwnership()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected Ownable()
         {
-            
+            this.handle.OwningThreadId = DefaultThread;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryTakeOwnership()
+        {
+            return Ownable.TryTakeOwnership(ref handle);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool ReturnOwnership()
+        {
+            return Ownable.ReturnOwnership(ref handle);
         }
     }
 }

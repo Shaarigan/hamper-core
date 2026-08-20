@@ -93,12 +93,6 @@ namespace Soe.Collections.Embedded
             buffer![count - 1] = item;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlySpan<T> AsSpan()
-        {
-            return new ReadOnlySpan<T>(buffer, 0, count);
-        }
-
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
@@ -181,6 +175,18 @@ namespace Soe.Collections.Embedded
         void Swap(int sourceIndex, int destinationIndex)
         {
             (buffer![sourceIndex], buffer[destinationIndex]) = (buffer[destinationIndex], buffer[sourceIndex]);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Span<T> AsSpan()
+        {
+            return new Span<T>(buffer, 0, count);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlySpan<T> AsReadOnlySpan()
+        {
+            return new ReadOnlySpan<T>(buffer, 0, count);
         }
 
         /// <inheritdoc/>
