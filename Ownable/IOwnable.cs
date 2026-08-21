@@ -16,9 +16,5 @@ namespace Soe.Threading
         {
             get;
         }
-        
-        bool TryTakeOwnership();
-        
-        bool ReturnOwnership();
     }
 }

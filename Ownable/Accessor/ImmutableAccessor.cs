@@ -11,22 +11,40 @@ namespace Soe.Threading
     #else
     internal
     #endif
-    readonly ref struct ImmutableAccessor
+    ref struct ImmutableAccessor<T>
+        where T : class, IOwnable
     {
+        private readonly T instance;
         private readonly ref OwnershipHandle handle;
+        private bool isDisposed;
+
+        public T Instance
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return instance; }
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ImmutableAccessor(T instance, ref OwnershipHandle handle)
+        {
+            this.instance = instance;
+            this.handle = ref handle;
+            this.isDisposed = false;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ImmutableAccessor(ref OwnershipHandle handle)
+        public static implicit operator bool(ImmutableAccessor<T> accessor)
         {
-            this.handle = ref handle;
+            return accessor.isDisposed;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
-            if (!Ownable.ReturnImmutableAccess(ref handle))
+            if (!isDisposed)
             {
-                throw new InvalidOperationException();
+                handle.ReturnSharedAccess();
+                isDisposed = true;
             }
         }
     }
