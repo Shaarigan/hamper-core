@@ -11,8 +11,9 @@ namespace Soe.Threading
     #else
     internal
     #endif
-    ref struct ImmutableAccessor<T>
-        where T : class, IOwnable
+    ref struct ScopedReference<T, Policy>
+        where T : class, IOwnable<T>
+        where Policy : struct, IAccessPolicy
     {
         private readonly T instance;
         private readonly ref OwnershipHandle handle;
@@ -25,7 +26,7 @@ namespace Soe.Threading
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ImmutableAccessor(T instance, ref OwnershipHandle handle)
+        internal ScopedReference(T instance, ref OwnershipHandle handle)
         {
             this.instance = instance;
             this.handle = ref handle;
@@ -33,7 +34,7 @@ namespace Soe.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static implicit operator bool(ImmutableAccessor<T> accessor)
+        public static implicit operator bool(ScopedReference<T, Policy> accessor)
         {
             return accessor.isDisposed;
         }
@@ -43,8 +44,11 @@ namespace Soe.Threading
         {
             if (!isDisposed)
             {
-                handle.ReturnSharedAccess();
-                isDisposed = true;
+                if (default(Policy).Return(ref handle))
+                {
+                    isDisposed = true;
+                }
+                else throw new ThreadOwnershipViolationException();
             }
         }
     }

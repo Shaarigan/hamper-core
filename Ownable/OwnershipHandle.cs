@@ -35,41 +35,59 @@ namespace Soe.Threading
             this.owningThreadId = DefaultThread;
             this.synchronizationBarrierState = 0;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetShredAccess()
         {
-            return SynchronizationBarrier.TryBeginSharedOperation(ref synchronizationBarrierState);
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetExclusiveAccess()
-        {
-            return SynchronizationBarrier.TryBeginExclusiveOperation(ref synchronizationBarrierState);
+            if (!IsOwningThread)
+            {
+                return SynchronizationBarrier.TryBeginSharedOperation(ref synchronizationBarrierState);
+            }
+            else return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryTakeOwnership(ref  OwnershipHandle handle)
+        public bool TryGetExclusiveAccess()
+        {
+            if (IsOwningThread)
+            {
+                return SynchronizationBarrier.TryBeginExclusiveOperation(ref synchronizationBarrierState);
+            }
+            else return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryTakeOwnership()
         {
             return (Interlocked.CompareExchange(ref owningThreadId, Thread.CurrentThread.ManagedThreadId, DefaultThread) == DefaultThread);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void ReturnSharedAccess()
+        public bool ReturnSharedAccess()
         {
-            SynchronizationBarrier.EndSharedOperation(ref synchronizationBarrierState);
+            if (!IsOwningThread)
+            {
+                SynchronizationBarrier.EndSharedOperation(ref synchronizationBarrierState);
+                return true;
+            }
+            else return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool ReturnExclusiveAccess()
+        {
+            if (IsOwningThread)
+            {
+                SynchronizationBarrier.EndExclusiveOperation(ref synchronizationBarrierState);
+                return true;
+            }
+            else return false;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void ReturnExclusiveAccess()
+        public bool ReturnOwnership()
         {
-            SynchronizationBarrier.EndExclusiveOperation(ref synchronizationBarrierState);
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void ReturnOwnership()
-        {
-            Volatile.Write(ref owningThreadId, DefaultThread);
+            return (Interlocked.CompareExchange(ref owningThreadId, DefaultThread, Thread.CurrentThread.ManagedThreadId) == Thread.CurrentThread.ManagedThreadId);
         }
     }
 }

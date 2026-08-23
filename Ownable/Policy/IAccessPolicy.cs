@@ -10,15 +10,10 @@ namespace Soe.Threading
     #else
     internal
     #endif
-    interface IOwnable<T>
-        where T : class, IOwnable<T>
+    interface IAccessPolicy
     {
-        bool IsOwningThread
-        {
-            get;
-        }
-
-        bool TryBorrow<Policy>(out ScopedReference<T, Policy> reference)
-            where Policy : struct, IAccessPolicy;
+        bool TryAcquire(ref OwnershipHandle handle);
+        
+        bool Return(ref OwnershipHandle handle);
     }
 }
