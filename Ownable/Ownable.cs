@@ -11,7 +11,8 @@ namespace Soe.Threading
     #else
     internal
     #endif
-    abstract class Ownable : IOwnable<Ownable>
+    abstract class Ownable<T> : IOwnable<T>
+        where T : Ownable<T>
     {
         private OwnershipHandle handle;
 
@@ -26,21 +27,15 @@ namespace Soe.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return handle.IsOwningThread; }
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryBorrow<Policy>(out ScopedReference<Ownable, Policy> reference)
-            where Policy : struct, IAccessPolicy
+        protected Ownable()
         {
-            if (default(Policy).TryAcquire(ref handle))
-            {
-                reference = new ScopedReference<Ownable, Policy>(this, ref handle);
-                return true;
-            }
-            else
-            {
-                reference = default;
-                return false;
-            }
+            this.handle = new OwnershipHandle();
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public abstract bool TryBorrow<Policy>(out ScopedReference<T, Policy> reference)
+            where Policy : struct, IAccessPolicy;
     }
 }

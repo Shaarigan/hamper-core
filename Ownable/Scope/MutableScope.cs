@@ -19,7 +19,7 @@ namespace Soe.Threading
 
         public bool Return(ref OwnershipHandle handle)
         {
-            throw new System.NotImplementedException();
+            return handle.ReturnOwnership();
         }
     }
 }

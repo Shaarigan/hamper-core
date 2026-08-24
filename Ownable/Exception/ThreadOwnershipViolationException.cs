@@ -6,7 +6,7 @@ using System;
 namespace Soe.Threading
 {
     /// <summary>
-    /// An exception thrown when a non-owning thread attempts to perform an owned operation
+    /// An exception thrown when a non-owning thread attempts to perform an owned operation or vice versa
     /// </summary>
     #if EXPORT_HAMPER_CORE_THREADING
     public

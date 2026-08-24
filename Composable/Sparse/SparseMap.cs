@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Soe.Threading;
 
 namespace Soe.Composable
 {
@@ -16,7 +17,8 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    abstract partial class SparseMap
+    abstract partial class SparseMap<T> : Ownable<T>
+        where T : SparseMap<T>
     {
         /// <summary>
         /// The maximum amount of elements stored before the container resizes in order to ensure

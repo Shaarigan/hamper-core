@@ -37,6 +37,12 @@ namespace Soe.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void GetShredAccessUnsafe()
+        {
+            SynchronizationBarrier.BeginSharedOperation(ref synchronizationBarrierState);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetShredAccess()
         {
             if (!IsOwningThread)
@@ -46,6 +52,12 @@ namespace Soe.Threading
             else return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void GetExclusiveAccessUnsafe()
+        {
+            SynchronizationBarrier.BeginExclusiveOperation(ref synchronizationBarrierState);
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetExclusiveAccess()
         {
@@ -67,10 +79,16 @@ namespace Soe.Threading
         {
             if (!IsOwningThread)
             {
-                SynchronizationBarrier.EndSharedOperation(ref synchronizationBarrierState);
+                ReturnSharedAccessUnsafe();
                 return true;
             }
             else return false;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ReturnSharedAccessUnsafe()
+        {
+            SynchronizationBarrier.EndSharedOperation(ref synchronizationBarrierState);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -78,10 +96,16 @@ namespace Soe.Threading
         {
             if (IsOwningThread)
             {
-                SynchronizationBarrier.EndExclusiveOperation(ref synchronizationBarrierState);
+                ReturnExclusiveAccessUnsafe();
                 return true;
             }
             else return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ReturnExclusiveAccessUnsafe()
+        {
+            SynchronizationBarrier.EndExclusiveOperation(ref synchronizationBarrierState);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

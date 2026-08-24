@@ -17,7 +17,7 @@ namespace Soe.Threading
     {
         private readonly T instance;
         private readonly ref OwnershipHandle handle;
-        private bool isDisposed;
+        private bool isActive;
 
         public T Instance
         {
@@ -30,23 +30,23 @@ namespace Soe.Threading
         {
             this.instance = instance;
             this.handle = ref handle;
-            this.isDisposed = false;
+            this.isActive = true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator bool(ScopedReference<T, Policy> accessor)
         {
-            return accessor.isDisposed;
+            return accessor.isActive;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
-            if (!isDisposed)
+            if (isActive)
             {
                 if (default(Policy).Return(ref handle))
                 {
-                    isDisposed = true;
+                    isActive = false;
                 }
                 else throw new ThreadOwnershipViolationException();
             }

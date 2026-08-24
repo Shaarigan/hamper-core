@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Soe.Collections.Embedded;
+using Soe.Threading;
 
 namespace Soe.Composable
 {
@@ -14,7 +15,7 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    class Entities : SparseArray, IEnumerable<EntityId>
+    class Entities : SparseArray<Entities>, IEnumerable<EntityId>, IOwnable<Entities>
     {
         private const int SHARD = 0;
 
@@ -47,75 +48,114 @@ namespace Soe.Composable
 
         public EntityId Create()
         {
-            Ref<MemoryHandle> handle;
-            EntityId entity;
-            
-            if (freeList == EntityId.Invalid)
+            if (IsOwningThread)
             {
-                // Create new entity from current max entity ID
-                entity = new EntityId(maxID++, 0, SHARD, EntityFlags.None);
-                int slot = entity.Index >> PageAllocator.BlockShift;
-                if (!Find(slot, out handle))
+                Ref<MemoryHandle> handle;
+                EntityId entity;
+
+                if (freeList == EntityId.Invalid)
                 {
-                    // Entity does not exist, add it to the sparse array
-                    ref MemoryHandle tmp = ref Emplace(slot, Version);
-                    if (!tmp.IsValid)
+                    // Create new entity from current max entity ID
+                    entity = new EntityId(maxID++, 0, SHARD, EntityFlags.None);
+                    int slot = entity.Index >> PageAllocator.BlockShift;
+                    if (!Find(slot, out handle))
                     {
-                        // Block is uninitialized, we must initialize it first to prevent false positives
-                        tmp = allocator.Allocate(PageAllocator.BlockSize);
-                        allocator.InitializeBlock(tmp, 0, EntityId.Invalid);
-                        handle = new Ref<MemoryHandle>(ref tmp);
+                        // Protect structural change
+                        Handle.GetExclusiveAccessUnsafe();
+                        try
+                        {
+                            // Entity does not exist, add it to the sparse array
+                            ref MemoryHandle tmp = ref Emplace(slot, Version);
+                            if (!tmp.IsValid)
+                            {
+                                // Block is uninitialized, we must initialize it first to prevent false positives
+                                tmp = allocator.Allocate(PageAllocator.BlockSize);
+                                allocator.InitializeBlock(tmp, 0, EntityId.Invalid);
+                                handle = new Ref<MemoryHandle>(ref tmp);
+                            }
+                        }
+                        finally
+                        {
+                            Handle.ReturnExclusiveAccessUnsafe();
+                        }
                     }
                 }
-            }
-            else
-            {
-                // Use recyclable entity
-                entity = new EntityId(freeList.Index, freeList.Version + 1, freeList.Shard, EntityFlags.None);
-                int slot = entity.Index >> PageAllocator.BlockShift;
-                if (Find(slot, out handle))
+                else
                 {
-                    // Swap the recyclable entity with whatever is stored at its slot in the sparse array
-                    freeList = allocator.Access(handle.Value, freeList.Index & PageAllocator.BlockMask);
+                    // Use recyclable entity
+                    entity = new EntityId(freeList.Index, freeList.Version + 1, freeList.Shard, EntityFlags.None);
+                    int slot = entity.Index >> PageAllocator.BlockShift;
+                    if (Find(slot, out handle))
+                    {
+                        // Swap the recyclable entity with whatever is stored at its slot in the sparse array
+                        freeList = allocator.Access(handle.Value, freeList.Index & PageAllocator.BlockMask);
+                    }
+                    else throw new AccessViolationException();
                 }
-                else throw new AccessViolationException();
+
+                int index = entities.Count;
+                
+                // Protect structural change
+                Handle.GetExclusiveAccessUnsafe();
+                try
+                {
+                    entities.Add(entity);
+                }
+                finally
+                {
+                    Handle.ReturnExclusiveAccessUnsafe();
+                }
+
+                // Write a modified version of entity to its slot in the sparse array so entity.Index -> dense index
+                allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, new EntityId(index, entity.Version, entity.Shard, entity.Flags));
+                return entity;
             }
-            int index = entities.Count;
-            entities.Add(entity);
-            
-            // Write a modified version of entity to its slot in the sparse array so entity.Index -> dense index
-            allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, new EntityId(index, entity.Version, entity.Shard, entity.Flags));
-            return entity;
+            else throw new ThreadOwnershipViolationException();
         }
 
         public bool Dispose(EntityId entity)
         {
-            if (Find(entity.Index, out Ref<MemoryHandle> handle))
+            if (IsOwningThread)
             {
-                // Check if entity is alive
-                EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
-                if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
+                if (Find(entity.Index, out Ref<MemoryHandle> handle))
                 {
-                    allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, freeList);
-                    freeList = new EntityId(entity.Index, entity.Version, entity.Shard, EntityFlags.Reserved);
-                    if (entityPtr.Index < Count - 1)
+                    // Check if entity is alive
+                    EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
+                    if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
                     {
-                        // Swap entity data with last entity
-                        EntityId swap = entities[Count - 1];
-                        if (Find(swap.Index, out handle))
-                        {
-                            EntityId tmp = allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask);
-                            allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.Shard, tmp.Flags));
+                        allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, freeList);
+                        freeList = new EntityId(entity.Index, entity.Version, entity.Shard, EntityFlags.Reserved);
 
-                            Swap(entityPtr.Index, tmp.Index);
+                        // Protect structural change
+                        try
+                        {
+                            if (entityPtr.Index < Count - 1)
+                            {
+                                // Swap entity data with last entity
+                                EntityId swap = entities[Count - 1];
+                                if (Find(swap.Index, out handle))
+                                {
+                                    EntityId tmp = allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask);
+                                    allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.Shard, tmp.Flags));
+
+                                    Handle.GetExclusiveAccessUnsafe();
+                                    Swap(entityPtr.Index, tmp.Index);
+                                }
+                                else throw new AccessViolationException();
+                            }
+                            else Handle.GetExclusiveAccessUnsafe();
+                            entities.RemoveAt(Count - 1);
                         }
-                        else throw new AccessViolationException();
+                        finally
+                        {
+                            Handle.ReturnExclusiveAccessUnsafe();
+                        }
+                        return true;
                     }
-                    entities.RemoveAt(Count - 1);
-                    return true;
                 }
+                return false;
             }
-            return false;
+            else throw new ThreadOwnershipViolationException();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -125,21 +165,50 @@ namespace Soe.Composable
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override bool TryBorrow<Policy>(out ScopedReference<Entities, Policy> reference)
+        {
+            if (default(Policy).TryAcquire(ref Handle))
+            {
+                reference = new ScopedReference<Entities, Policy>(this, ref Handle);
+                return true;
+            }
+            else
+            {
+                reference = default;
+                return false;
+            }
+        }
+        
         public bool TryGet(EntityId entity, out EntityId result)
         {
-            if (Find(entity.Index, out Ref<MemoryHandle> handle))
+            bool needsDispose = IsOwningThread;
+            if (needsDispose)
             {
-                // Check if entity is alive
-                EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
-                if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
+                Handle.GetShredAccessUnsafe();
+            }
+            try
+            {
+                if (Find(entity.Index, out Ref<MemoryHandle> handle))
                 {
-                    result = entities[entityPtr.Index];
-                    return true;
+                    // Check if entity is alive
+                    EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
+                    if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
+                    {
+                        result = entities[entityPtr.Index];
+                        return true;
+                    }
+                }
+
+                result = EntityId.Invalid;
+                return false;
+            }
+            finally
+            {
+                if (needsDispose)
+                {
+                    Handle.ReturnSharedAccessUnsafe();
                 }
             }
-
-            result = EntityId.Invalid;
-            return false;
         }
 
         /// <inheritdoc/>

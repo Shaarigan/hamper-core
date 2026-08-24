@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Soe.Threading;
 
 namespace Soe.Composable
 {
@@ -14,7 +15,8 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    abstract partial class SparseArray
+    abstract partial class SparseArray<T> : Ownable<T>
+        where T : SparseArray<T>
     {
         private MemoryHandle[]? data;
         /// <summary>

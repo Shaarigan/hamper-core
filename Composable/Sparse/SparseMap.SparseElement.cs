@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Soe.Threading;
 
 namespace Soe.Composable
 {
@@ -11,10 +12,10 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    abstract partial class SparseMap
+    abstract partial class SparseMap<T>
     {
         /// <summary>
-        /// Represents a container element of the <seealso cref="EmbeddedHashSet"/>
+        /// Represents a container element of the <seealso cref="SparseMap{T}"/>
         /// </summary>
         struct SparseElement
         {
