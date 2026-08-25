@@ -15,7 +15,7 @@ namespace Soe.Threading
     #else
     internal
     #endif
-    static class FastSpinLock
+    static partial class FastSpinLock
     {
         private const UInt32 LockBit = 0x1;
         

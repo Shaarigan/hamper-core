@@ -15,7 +15,7 @@ namespace Soe.Threading
     #else
     internal
     #endif
-    static class SynchronizationBarrier
+    static partial class SynchronizationBarrier
     {
         private const UInt32 SharedBits = 0x7FFFFFFF;
         private const UInt32 ExclusiveBit = 0x80000000;
@@ -61,6 +61,25 @@ namespace Soe.Threading
                 UInt32 newLock = oldLock + 1;
 
                 return (Interlocked.CompareExchange(ref lockVariable, newLock, oldLock) == oldLock);
+            }
+            else return false;
+        }
+        
+        /// <summary>
+        /// Tries to signal the beginning of a new shared operation or block, if such an operation is already in progress
+        /// </summary>
+        /// <param name="lockVariable">A fixed 32-bit value to use as synchronization bits</param>
+        /// <param name="sharedBits">A bit-mask defining the shared operation bits. Default is 0x7FFFFFFF</param>
+        /// <param name="exclusiveBit">A bit-mask defining the exclusive operation bit. Default is 0x80000000</param>
+        /// <returns>True if the shared operation was successfully signaled, false otherwise</returns>
+        public static bool TryBeginSharedOperationConditional(ref UInt32 lockVariable, UInt32 sharedBits = SharedBits, UInt32 exclusiveBit = ExclusiveBit)
+        {
+            if ((Volatile.Read(ref lockVariable) & exclusiveBit) == 0)
+            {
+                UInt32 oldLock = (Volatile.Read(ref lockVariable) & sharedBits);
+                UInt32 newLock = oldLock + 1;
+
+                return (oldLock > 0 && Interlocked.CompareExchange(ref lockVariable, newLock, oldLock) == oldLock);
             }
             else return false;
         }

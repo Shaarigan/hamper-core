@@ -34,7 +34,11 @@ namespace Soe.Composable
         public ReadOnlySpan<EntityId> Entities
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return entities.AsReadOnlySpan(); }
+            get
+            {
+                ThrowOnNotOwnedOrShared();
+                return entities.AsReadOnlySpan();
+            }
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -47,109 +51,95 @@ namespace Soe.Composable
 
         public ref T Add(EntityId entity)
         {
-            if (IsOwningThread)
+            ThrowOnNotOwned();
+            
+            int slot = entity.Index >> PageAllocator.BlockShift;
+            if (!Find(slot, out int index, out int distance, out Ref<MemoryHandle> handle))
             {
-                int slot = entity.Index >> PageAllocator.BlockShift;
-                if (!Find(slot, out int index, out int distance, out Ref<MemoryHandle> handle))
+                // Protect structural change
+                using(ScopedDisposable.Acquire(ref Handle, default(ExclusiveScope)))
                 {
-                    // Protect structural change
-                    Handle.GetExclusiveAccessUnsafe();
-                    try
+                    // Entity slot is new to this container, add it
+                    ref MemoryHandle tmp = ref Emplace(slot, index, distance, Version);
+                    if (!tmp.IsValid)
                     {
-                        // Entity slot is new to this container, add it
-                        ref MemoryHandle tmp = ref Emplace(slot, index, distance, Version);
-                        if (!tmp.IsValid)
-                        {
-                            // Block is uninitialized, initialize it to prevent false positives
-                            tmp = allocator.Allocate(PageAllocator.BlockSize);
-                            allocator.InitializeBlock(tmp, 0, EntityId.Invalid);
-                            handle = new Ref<MemoryHandle>(ref tmp);
-                        }
+                        // Block is uninitialized, initialize it to prevent false positives
+                        tmp = allocator.Allocate(PageAllocator.BlockSize);
+                        allocator.InitializeBlock(tmp, 0, EntityId.Invalid);
+                        handle = new Ref<MemoryHandle>(ref tmp);
                     }
-                    finally
-                    {
-                        Handle.ReturnExclusiveAccessUnsafe();
-                    }
+                }
+            }
+
+            // Look the entity up in the sparse map
+            EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
+            if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
+            {
+                // Entity exists and is alive
+                index = entityPtr.Index;
+            }
+            else
+            {
+                // Entity is new to this component, add it
+                index = components.Count;
+
+                // Protect structural change
+                using(ScopedDisposable.Acquire(ref Handle, default(ExclusiveScope)))
+                {
+                    components.Add(default);
+                    entities.Add(entity);
                 }
 
-                // Look the entity up in the sparse map
-                EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
-                if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
-                {
-                    // Entity exists and is alive
-                    index = entityPtr.Index;
-                }
-                else
-                {
-                    // Entity is new to this component, add it
-                    index = components.Count;
-                    
-                    // Protect structural change
-                    Handle.GetExclusiveAccessUnsafe();
-                    try
-                    {
-                        components.Add(default);
-                        entities.Add(entity);
-                    }
-                    finally
-                    {
-                        Handle.ReturnExclusiveAccessUnsafe();
-                    }
-                    
-                    // Write a modified version of entity to its slot in the sparse map so entity.Index -> dense index
-                    allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, new EntityId(index, entity.Version, entity.Shard, entity.Flags));
-                }
-                return ref components[index];
+                // Write a modified version of entity to its slot in the sparse map so entity.Index -> dense index
+                allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, new EntityId(index, entity.Version, entity.Shard, entity.Flags));
             }
-            else throw new ThreadOwnershipViolationException();
+            return ref components[index];
         }
 
         public bool Remove(EntityId entity)
         {
-            if (IsOwningThread)
+            ThrowOnNotOwned();
+            
+            if (Find(entity.Index, out _, out _, out Ref<MemoryHandle> handle))
             {
-                if (Find(entity.Index, out _, out _, out Ref<MemoryHandle> handle))
+                // Check if entity is alive
+                EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
+                if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
                 {
-                    // Check if entity is alive
-                    EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
-                    if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
-                    {
-                        // Mark component as removed by adding the reserved flag
-                        allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, new EntityId(entityPtr.Index, entityPtr.Version, entityPtr.Shard, EntityFlags.Reserved));
-                        
-                        // Protect structural change
-                        try
-                        {
-                            if (entityPtr.Index < Count - 1)
-                            {
-                                // Swap entity data with last entity
-                                EntityId swap = entities[Count - 1];
-                                if (Find(swap.Index, out _, out _, out handle))
-                                {
-                                    EntityId tmp = allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask);
-                                    allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.Shard, tmp.Flags));
+                    // Mark component as removed by adding the reserved flag
+                    allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, new EntityId(entityPtr.Index, entityPtr.Version, entityPtr.Shard, EntityFlags.Reserved));
 
-                                    Handle.GetExclusiveAccessUnsafe();
-                                    Swap(entityPtr.Index, tmp.Index);
-                                }
-                                else throw new AccessViolationException();
-                            }
-                            else Handle.GetExclusiveAccessUnsafe();
-                            
-                            int index = Count - 1;
-                            components.RemoveAt(index);
-                            entities.RemoveAt(index);
-                        }
-                        finally
+                    // Protect structural change
+                    try
+                    {
+                        if (entityPtr.Index < Count - 1)
                         {
-                            Handle.ReturnExclusiveAccessUnsafe();
+                            // Swap entity data with last entity
+                            EntityId swap = entities[Count - 1];
+                            if (Find(swap.Index, out _, out _, out handle))
+                            {
+                                EntityId tmp = allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask);
+                                allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.Shard, tmp.Flags));
+
+                                Handle.GetExclusiveAccessUnsafe();
+                                Swap(entityPtr.Index, tmp.Index);
+                            }
+                            else throw new AccessViolationException();
                         }
-                        return true;
+                        else Handle.GetExclusiveAccessUnsafe();
+
+                        int index = Count - 1;
+                        components.RemoveAt(index);
+                        entities.RemoveAt(index);
                     }
+                    finally
+                    {
+                        Handle.ReturnExclusiveAccessUnsafe();
+                    }
+                    return true;
                 }
-                return false;
             }
-            else throw new ThreadOwnershipViolationException();
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -173,15 +163,21 @@ namespace Soe.Composable
                 return false;
             }
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGet(EntityId entity, out Ref<T> result)
         {
-            bool needsDispose = IsOwningThread;
-            if (needsDispose)
+            if (TestAndSetSharedRegion())
             {
-                Handle.GetShredAccessUnsafe();
+                return TryGet<SharedScope>(entity, out result);
             }
-            try
+            else return TryGet<EmptyScope<OwnershipHandle>>(entity, out result);
+        }
+        
+        bool TryGet<Policy>(EntityId entity, out Ref<T> result)
+            where Policy : struct, IScopePolicy<OwnershipHandle>
+        {
+            using(ScopedDisposable.Create(ref Handle, default(Policy)))
             {
                 if (Find(entity.Index, out _, out _, out Ref<MemoryHandle> handle))
                 {
@@ -196,13 +192,6 @@ namespace Soe.Composable
 
                 result = Ref<T>.CreateEmpty();
                 return false;
-            }
-            finally
-            {
-                if (needsDispose)
-                {
-                    Handle.ReturnSharedAccessUnsafe();
-                }
             }
         }
 
