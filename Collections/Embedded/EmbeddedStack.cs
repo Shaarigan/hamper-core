@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace Soe.Collections.Embedded
 {
-    #if EXPORT_HAMPER_CORE_COLLECTIONS_INLINE
+    #if EXPORT_HAMPER_CORE_COLLECTIONS_EMBEDDED
     public
     #else
     internal

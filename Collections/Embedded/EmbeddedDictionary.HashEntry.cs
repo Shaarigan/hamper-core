@@ -2,17 +2,18 @@
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
 using System.Runtime.CompilerServices;
+using Soe.Collections.HashSet;
 
 namespace Soe.Collections.Embedded
 {
-    #if EXPORT_HAMPER_CORE_COMPOSABLE
+    #if EXPORT_HAMPER_CORE_COLLECTIONS_EMBEDDED
     public
     #else
     internal
     #endif
     partial struct EmbeddedDictionary<TKey, TValue>
     {
-        internal struct HashEntry
+        internal struct HashEntry : IHashContainer<TKey>
         {
             private readonly TKey key;
             /// <summary>
@@ -47,26 +48,18 @@ namespace Soe.Collections.Embedded
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get { return hash != 0; }
             }
-            
-            /// <summary>
-            /// Gets if this element is currently occupied
-            /// </summary>
-            public bool IsEmpty
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get { return hash == 0; }
-            }
 
             /// <summary>
             /// Initializes this element with the corresponding slot index and a reserved handle
             /// </summary>
             /// <param name="key">This elements key</param>
             /// <param name="hash">This elements hash value</param>
+            /// <param name="value">The initial value of the element</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public HashEntry(in TKey key, int hash)
+            public HashEntry(in TKey key, int hash, in TValue value)
             {
                 this.key = key;
-                this.Value = default!;
+                this.Value = value!;
                 this.hash = hash;
             }
         }

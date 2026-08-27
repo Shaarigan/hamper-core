@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Soe.Collections.HashSet;
 
 namespace Soe.Collections.Embedded
 {
@@ -13,40 +14,31 @@ namespace Soe.Collections.Embedded
     /// </summary>
     /// <remarks>Robin Hood hashing is an open addressing scheme that reduces variance in probe lengths by moving elements with
     /// shorter probe distances away to make room for elements that are farther from their ideal hash position</remarks>
-    #if EXPORT_HAMPER_CORE_COMPOSABLE
+    #if EXPORT_HAMPER_CORE_COLLECTIONS_EMBEDDED
     public
     #else
     internal
     #endif
     partial struct EmbeddedDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
     {
-        /// <summary>
-        /// The maximum amount of elements stored before the container resizes in order to ensure
-        /// an optimal hash calculation
-        /// </summary>
-        public const float LoadFactor = 0.86f;
-        private int moduloMask;
+        private HashSet<TKey, HashEntry> hashSet;
         
-        readonly IEqualityComparer<TKey> comparer;
-        
-        private HashEntry[]? data;
         /// <summary>
         /// Gets the maximum number of elements that can be stored
         /// </summary>
         public int Capacity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return data?.Length ?? 0; }
+            get { return hashSet.Capacity; }
         }
         
-        private int count;
         /// <summary>
         /// Gets the current number of elements stored
         /// </summary>
         public int Count
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return count; }
+            get { return hashSet.Count; }
         }
 
         /// <inheritdoc/>
@@ -65,9 +57,9 @@ namespace Soe.Collections.Embedded
             get
             {
                 int hash = key!.GetHashCode();
-                if (Find(key, hash, out _, out _, out Ref<TValue> result))
+                if (hashSet.Find(key, hash, out _, out _, out Ref<HashEntry> result))
                 {
-                    return ref result.Value;
+                    return ref result.Value.Value;
                 }
                 else throw new ArgumentOutOfRangeException();
             }
@@ -140,7 +132,7 @@ namespace Soe.Collections.Embedded
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public EmbeddedDictionary(EqualityComparer<TKey> comparer)
         {
-            this.comparer = comparer;
+            this.hashSet = new HashSet<TKey, HashEntry>(comparer);
         }
         /// <summary>
         /// Initializes an empty instance of this container
@@ -155,9 +147,9 @@ namespace Soe.Collections.Embedded
         public void Add(TKey key, TValue value)
         {
             int hash = key!.GetHashCode();
-            if (!Find(key, hash, out _, out _, out _))
+            if (!hashSet.Find(key, hash, out int index, out int distance, out _))
             {
-                Emplace(key, hash) = value;
+                hashSet.Emplace(key, hash, index, distance, hashSet.Version) = new HashEntry(key, hash, value);
             }
             else throw new ArgumentException();
         }
@@ -172,11 +164,7 @@ namespace Soe.Collections.Embedded
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
-            if (Capacity > 0)
-            {
-                Array.Clear(data!);
-            }
-            count = 0;
+            hashSet.Clear();
         }
 
         /// <inheritdoc/>
@@ -184,9 +172,9 @@ namespace Soe.Collections.Embedded
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
             int hash = item.Key!.GetHashCode();
-            if (Find(item.Key, hash, out _, out _, out Ref<TValue> result))
+            if (hashSet.Find(item.Key, hash, out _, out _, out Ref<HashEntry> result))
             {
-                return EqualityComparer<TValue>.Default.Equals(item.Value, result.Value);
+                return EqualityComparer<TValue>.Default.Equals(item.Value, result.Value.Value);
             }
             else return false;
         }
@@ -200,7 +188,7 @@ namespace Soe.Collections.Embedded
         public bool ContainsKey(TKey key)
         {
             int hash = key!.GetHashCode();
-            if (Find(key, hash, out _, out _, out _))
+            if (hashSet.Find(key, hash, out _, out _, out _))
             {
                 return true;
             }
@@ -211,180 +199,27 @@ namespace Soe.Collections.Embedded
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            if (array.Length - arrayIndex >= count)
+            if (array.Length - arrayIndex >= hashSet.Count)
             {
-                for (int i = 0, length = data!.Length; i < length; i++)
+                HashEntry[] items = hashSet.Items!;
+                for (int i = 0, length = items.Length; i < length; i++)
                 {
-                    if (data![i].IsValid)
-                        array[arrayIndex++] = new KeyValuePair<TKey, TValue>(data![i].Key, data[i].Value);
+                    if (items[i].IsValid)
+                        array[arrayIndex++] = new KeyValuePair<TKey, TValue>(items[i].Key, items[i].Value);
                 }
             }
             else throw new ArgumentException();
         }
 
-        ref TValue Emplace(in TKey key, int hash)
-        {
-            if (!Find(key, hash, out int index, out int distance, out Ref<TValue> result))
-            {
-                if (data == null || count >= data.Length * LoadFactor)
-                {
-                    Grow();
-                    index = (hash & moduloMask);
-                }
-
-                ref HashEntry element = ref data![Emplace(index, distance)];
-                element = new HashEntry(key, hash);
-                return ref element.Value;
-            }
-            else return ref result.Value;
-        }
-        int Emplace(int index, int distance)
-        {
-            if (data![index].IsEmpty)
-            {
-                // Insert as slot is already empty
-                
-                count++;
-                return index;
-            }
-            else
-            {
-                HashEntry element = default;
-                {
-                    int i = distance;
-                    int tmp = GetDistance(index);
-                    int result; 
-                    
-                    // Check if distance is smaller than the current distance
-                    if(distance > tmp)
-                    {
-                        // Swap elements so the new element is closer to index
-                        Swap(ref data[index], ref element);
-                        result = index;
-                        distance = tmp;
-                    }
-                    else result = -1;
-                    
-                    index = (index + 1) & moduloMask;
-                    distance++;
-
-                    // Move the current element to the next free slot
-                    for (; i < data.Length; i++, index = (index + 1) & moduloMask)
-                    {
-                        // Free slot found to put the element into
-                        if (data[index].IsEmpty)
-                        {
-                            count++;
-                            if (!element.IsEmpty)
-                            {
-                                Swap(ref data[index], ref element);
-                                
-                                #if DEBUG
-                                if(result < 0)
-                                {
-                                    throw new IndexOutOfRangeException();
-                                }
-                                else
-                                #endif
-                                return result;
-                            }
-                            else return index;
-                        }
-                        else
-                        {
-                            // Check if distance is smaller than the current distance and swap
-                            tmp = GetDistance(index);
-                            if (distance > tmp)
-                            {
-                                if (element.IsEmpty)
-                                {
-                                    result = index;
-                                }
-                                Swap(ref data[index], ref element);
-                                distance = tmp;
-                            }
-                            distance++;
-                        }
-                    }
-                }
-                throw new OverflowException();
-            }
-        }
-
-        bool Find(in TKey key, int hash, out int index, out int distance, out Ref<TValue> result)
-        {
-            if (count > 0)
-            {
-                index = (hash & moduloMask);
-                distance = 0;
-
-                for (int length = data?.Length ?? 0; distance < length; distance++, index = (index + 1) & moduloMask)
-                {
-                    if (data![index].IsValid)
-                    {
-                        if (hash == data[index].Hash && comparer.Equals(key, data[index].Key))
-                        {
-                            result = new Ref<TValue>(ref data[index].Value);
-                            return true;
-                        }
-                        else if (distance > GetDistance(index))
-                            break;
-                    }
-                    else break;
-                }
-            }
-
-            index = 0;
-            distance = 0;
-            
-            result = Ref<TValue>.CreateEmpty(); 
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int GetDistance(int index)
-        {
-            int tmp = (data![index].Hash & moduloMask);
-            if (tmp > index)
-            {
-                return (index + (data.Length - tmp));
-            }
-            else return (index - tmp);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Grow()
-        {
-            Reserve(data == null ? 4 : data.Length + 1);
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Swap(ref HashEntry lhs, ref HashEntry rhs)
-        {
-            (lhs, rhs) = (rhs, lhs);
-        }
-
         /// <inheritdoc/>
         public bool Remove(TKey key)
         {
-            if (count > 0)
+            if (hashSet.Find(key, key!.GetHashCode(), out _, out _, out Ref<HashEntry> result))
             {
-                for (int hash = key!.GetHashCode(), index = (hash & moduloMask), distance = 0, length = data?.Length ?? 0; distance < length; distance++, index = (index + 1) & moduloMask)
-                {
-                    if (data![index].IsValid)
-                    {
-                        if (hash == data[index].Hash && comparer.Equals(key, data[index].Key))
-                        {
-                            data[index] = default;
-                            return true;
-                        }
-                        else if (distance > GetDistance(index))
-                            break;
-                    }
-                    else break;
-                }
+                result.Value = default;
+                return true;
             }
-            return false;
+            else return false;
         }
 
         /// <inheritdoc/>
@@ -399,26 +234,10 @@ namespace Soe.Collections.Embedded
         /// </summary>
         /// <param name="capacity">The target capacity for this container to become</param>
         /// <remarks>The container resizes to powers of two only</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reserve(int capacity)
         {
-            capacity = capacity.NextPowerOfTwo();
-            moduloMask = (capacity - 1);
-            count = 0;
-
-            HashEntry[]? tmp = data;
-            data = new HashEntry[capacity];
-            if (tmp != null)
-            {
-                // Reinsert existing elements
-                for (int i = 0; i < tmp.Length; i++)
-                {
-                    if (tmp[i].IsValid)
-                    {
-                        int index = Emplace(tmp[i].Hash & moduloMask, 0);
-                        data[index] = tmp[i];
-                    }
-                }
-            }
+            hashSet.Reserve(capacity);
         }
 
         /// <summary>
@@ -431,9 +250,9 @@ namespace Soe.Collections.Embedded
         public bool TryGetValue(TKey key, out TValue value)
         {
             int hash = key!.GetHashCode();
-            if (Find(key, hash, out _, out _, out Ref<TValue> result))
+            if (hashSet.Find(key, hash, out _, out _, out Ref<HashEntry> result))
             {
-                value = result.Value;
+                value = result.Value.Value;
                 return true;
             }
             else
@@ -447,7 +266,7 @@ namespace Soe.Collections.Embedded
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            return new Enumerator(data, count);
+            return new Enumerator(hashSet.Items, hashSet.Count);
         }
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
