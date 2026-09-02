@@ -1,13 +1,11 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace Soe.Threading
 {
-    #if EXPORT_HAMPER_CORE_
+    #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
@@ -49,27 +47,14 @@ namespace Soe.Threading
         public int Enqueue<Accessor>(in Accessor array, T value)
             where Accessor : IArrayAccessor<T?>
         {
-        Insert:
+        Head:
             using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))
             {
-                int capacityBits = array.Length - 1;
-                for (;;)
+                if (TryEnqueue(array, value, out int index))
                 {
-                    UInt32 current = Volatile.Read(ref head);
-                    if (current - Volatile.Read(ref tail) >= capacityBits)
-                    {
-                        // List is full, resize
-                        goto Resize;
-                    }
-                    else if (Interlocked.CompareExchange(ref head, current + 1, current) == current)
-                    {
-                        Volatile.Write(ref array[(int)(current & capacityBits)], value);
-                        return (int)(current & capacityBits);
-                    }
+                    return index;
                 }
             }
-
-        Resize:
             using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.ExclusiveOperation>(ref lockVariable))
             {
                 int capacityBits = array.Length - 1;
@@ -85,31 +70,48 @@ namespace Soe.Threading
                 {
                     head = (UInt32)(head % capacityBits);
                     tail = (UInt32)(tail % capacityBits);
+                    int oldCount = Count;
                     
                     array.Resize((array.Length + 1).NextPowerOfTwo());
-                    goto Insert;
+                    if (tail > head)
+                    {
+                        int count = (int)(head + 1);
+                        int mergeIndex = (int)(tail + oldCount - count);
+                        
+                        Span<T?> span = array.AsSpan();
+                        span.Slice(0, count)
+                            .CopyTo(span.Slice(mergeIndex));
+
+                        head = (UInt32)(mergeIndex + count - 1);
+                    }
+                    goto Head;
                 }
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryDequeue<Accessor>(in Accessor array, out T? value)
+        public bool TryEnqueue<Accessor>(in Accessor array, T value, out int index)
             where Accessor : IArrayAccessor<T?>
         {
-            using (ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))
+            int capacityBits = array.Length - 1;
+            for (;;)
             {
-                return TryDequeueInternal(array, out value);
+                UInt32 current = Volatile.Read(ref head);
+                if (current - Volatile.Read(ref tail) >= capacityBits)
+                {
+                    // List is full
+                    index = -1;
+                    return false;
+                }
+                else if (Interlocked.CompareExchange(ref head, current + 1, current) == current)
+                {
+                    Volatile.Write(ref array[(int)(current & capacityBits)], value);
+                    index = (int)(current & capacityBits);
+                    return true;
+                }
             }
         }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryDequeueUnsafe<Accessor>(in Accessor array, out T? value)
-            where Accessor : IArrayAccessor<T?>
-        {
-            return TryDequeueInternal(array, out value);
-        }
 
-        bool TryDequeueInternal<Accessor>(in Accessor array, out T? value)
+        public bool TryDequeue<Accessor>(in Accessor array, out T? value)
             where Accessor : IArrayAccessor<T?>
         {
             if (Count > 0)

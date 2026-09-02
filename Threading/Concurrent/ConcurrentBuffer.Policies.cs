@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace Soe.Threading
 {
-    #if EXPORT_HAMPER_CORE_
+    #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
