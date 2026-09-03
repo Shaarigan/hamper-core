@@ -16,7 +16,7 @@ namespace Soe.Threading
         /// <summary>
         /// A policy that manages begin and end of an exclusive operation or block
         /// </summary>
-        public struct LockOperation : IScopePolicy<UInt32>
+        public struct LockOperation : IRefScopePolicy<UInt32>
         {
             /// <summary>
             /// Signals the beginning of an exclusive operation or block

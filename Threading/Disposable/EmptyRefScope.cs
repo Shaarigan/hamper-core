@@ -10,7 +10,7 @@ namespace Soe.Threading
     #else
     internal
     #endif
-    readonly struct EmptyScope<T> : IScopePolicy<T>
+    readonly struct EmptyRefScope<T> : IRefScopePolicy<T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Acquire(ref T parameter)

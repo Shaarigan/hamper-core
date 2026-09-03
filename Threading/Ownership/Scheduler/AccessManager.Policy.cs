@@ -10,16 +10,15 @@ namespace Soe.Threading
     #else
     internal
     #endif
-    readonly struct MutableScope : IMutablePolicy
+    static partial class AccessManager
     {
-        public bool TryAcquire(ref OwnershipHandle handle)
+        public readonly struct ManagedAccessPolicy : IScopePolicy<IAccessHandle>
         {
-            return handle.TryTakeOwnership();
-        }
-
-        public bool Return(ref OwnershipHandle handle)
-        {
-            return handle.ReturnOwnership();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Dispose(in IAccessHandle instance)
+            {
+                Return(instance);
+            }
         }
     }
 }

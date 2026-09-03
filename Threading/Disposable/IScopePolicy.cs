@@ -1,7 +1,6 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System;
 using System.Diagnostics.Contracts;
 
 namespace Soe.Threading
@@ -13,12 +12,10 @@ namespace Soe.Threading
     #endif
     interface IScopePolicy<T>
     {
-        void Acquire(ref T parameter);
-        
         // ReSharper disable PureAttributeOnVoidMethod
         
         [Pure]
-        void Dispose(ref T parameter);
+        void Dispose(in T parameter);
         
         // ReSharper restore PureAttributeOnVoidMethod
     }

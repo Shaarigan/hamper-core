@@ -1,6 +1,7 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace Soe.Threading
@@ -68,24 +69,32 @@ namespace Soe.Threading
                 }
                 else
                 {
-                    head = (UInt32)(head % capacityBits);
-                    tail = (UInt32)(tail % capacityBits);
-                    int oldCount = Count;
-                    
-                    array.Resize((array.Length + 1).NextPowerOfTwo());
-                    if (tail > head)
-                    {
-                        int count = (int)(head + 1);
-                        int mergeIndex = (int)(tail + oldCount - count);
-                        
-                        Span<T?> span = array.AsSpan();
-                        span.Slice(0, count)
-                            .CopyTo(span.Slice(mergeIndex));
-
-                        head = (UInt32)(mergeIndex + count - 1);
-                    }
+                    Grow(array);
                     goto Head;
                 }
+            }
+        }
+
+        public void Grow<Accessor>(in Accessor array)
+            where Accessor : IArrayAccessor<T?>
+        {
+            int capacityBits = array.Length - 1;
+            
+            head = (UInt32)(head % capacityBits);
+            tail = (UInt32)(tail % capacityBits);
+            int oldCount = Count;
+                    
+            array.Resize((array.Length + 1).NextPowerOfTwo());
+            if (tail > head)
+            {
+                int count = (int)(head + 1);
+                int mergeIndex = (int)(tail + oldCount - count);
+                        
+                Span<T?> span = array.AsSpan();
+                span.Slice(0, count)
+                    .CopyTo(span.Slice(mergeIndex));
+
+                head = (UInt32)(mergeIndex + count - 1);
             }
         }
 
@@ -127,6 +136,13 @@ namespace Soe.Threading
                 value = null;
                 return false;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Reset()
+        {
+            head = 0;
+            tail = 0;
         }
     }
 }

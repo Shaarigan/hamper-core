@@ -10,7 +10,7 @@ namespace Soe.Threading
     #else
     internal
     #endif
-    interface IImmutablePolicy : IAccessPolicy
+    interface IAccessPolicy
     {
         
     }

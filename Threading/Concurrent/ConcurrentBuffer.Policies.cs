@@ -15,7 +15,7 @@ namespace Soe.Threading
         /// <summary>
         /// A policy that manages begin and end of a shared operation or block
         /// </summary>
-        public struct SharedOperation : IScopePolicy<ConcurrentBuffer<T>>
+        public struct SharedOperation : IRefScopePolicy<ConcurrentBuffer<T>>
         {
             /// <summary>
             /// Signals the beginning of a new shared operation or block
@@ -41,7 +41,7 @@ namespace Soe.Threading
         /// <summary>
         /// A policy that manages begin and end of an exclusive operation or block
         /// </summary>
-        public struct ExclusiveOperation : IScopePolicy<ConcurrentBuffer<T>>
+        public struct ExclusiveOperation : IRefScopePolicy<ConcurrentBuffer<T>>
         {
             /// <summary>
             /// Signals the beginning of an exclusive operation or block. Shared operations are synchronized before an exclusive
