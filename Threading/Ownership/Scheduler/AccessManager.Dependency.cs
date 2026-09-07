@@ -18,22 +18,50 @@ namespace Soe.Threading
             where T : class
         {
             private static HashSet<object, TaskList> tasks;
+            private static UInt32 lockVariable;
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static Dependency()
             {
-                tasks = default;
+                tasks = new HashSet<object, TaskList>(EqualityComparer<object>.Default);
+                lockVariable = 0;
             }
 
             public static bool Append<Policy>(object instance, TaskNode node)
-                where Policy : IAccessPolicy
+                where Policy : struct, IAccessPolicy
             {
-                return false;
+                int hash = RuntimeHelpers.GetHashCode(instance);
+                int index;
+                int distance;
+                int version;
+                
+                using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))  
+                {  
+                    if(tasks.Find(instance, hash, out index, out distance, out Ref<TaskList> result))  
+                    {  
+                        return result.Value.Append<T, Policy>(node);
+                    }
+                    version = tasks.Version;
+                }
+                using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.ExclusiveOperation>(ref lockVariable))   
+                {  
+                    ref TaskList taskList = ref tasks.Emplace(instance, hash, index, distance, version);
+                    taskList = new TaskList(hash, instance);
+                    
+                    return taskList.Append<T, Policy>(node);
+                }
             }
 
             public static void Remove(object instance, TaskNode node)
             {
-                
+                int hash = RuntimeHelpers.GetHashCode(instance);
+                using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))  
+                {  
+                    if(tasks.Find(instance, hash, out _, out _, out Ref<TaskList> result))
+                    {
+                        result.Value.Remove(node);
+                    }
+                }
             }
         }
     }

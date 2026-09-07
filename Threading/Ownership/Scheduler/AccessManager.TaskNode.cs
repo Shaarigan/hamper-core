@@ -71,7 +71,8 @@ namespace Soe.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void AppendChild(TaskNode child)
             {
-                children.Enqueue(array, child);
+                children.Enqueue(ref array, child);
+                child.AddParent();
             }
 
             public virtual int Clear<Accessor>(ref Accessor dispatchableNodes)
@@ -104,6 +105,9 @@ namespace Soe.Threading
                     return nodeCount;
                 }
             }
+
+            public abstract int GetOrder<T>()
+                where T : class;
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool RemoveParent()
@@ -112,22 +116,26 @@ namespace Soe.Threading
             }
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Shift()
+            public void SetInitialized()
             {
-                if (State < TaskNodeState.Completed)
+                if (State < TaskNodeState.Initialized)
                 {
-                    Interlocked.Increment(ref state);
+                    Volatile.Write(ref state, (int)TaskNodeState.Initialized);
                 }
             }
 
             public void SignalNode()
             {
-                signal.TrySetResult(this);
+                if (signal.TrySetResult(this))
+                {
+                    Volatile.Write(ref state, (int)TaskNodeState.Running);
+                }
             }
         }
 
-        class TaskNode<T> : TaskNode
+        class TaskNode<T, Policy> : TaskNode
             where T : class
+            where Policy : struct, IAccessPolicy
         {
             private readonly T instance;
 
@@ -143,10 +151,22 @@ namespace Soe.Threading
                 Dependency<T>.Remove(instance, this);
                 return base.Clear(ref dispatchableNodes);
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override int GetOrder<TOther>()
+            {
+                if (typeof(TOther) == typeof(T))
+                {
+                    return default(Policy).Order;
+                }
+                else throw new ArgumentException(nameof(TOther));
+            }
         }
-        class TaskNode<T1, T2> : TaskNode
+        class TaskNode<T1, Policy1, T2, Policy2> : TaskNode
             where T1 : class
             where T2 : class
+            where Policy1 : struct, IAccessPolicy
+            where Policy2 : struct, IAccessPolicy
         {
             private readonly T1 i1;
             private readonly T2 i2;
@@ -165,11 +185,28 @@ namespace Soe.Threading
                 Dependency<T1>.Remove(i2, this);
                 return base.Clear(ref dispatchableNodes);
             }
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override int GetOrder<T>()
+            {
+                if (typeof(T) == typeof(T1))
+                {
+                    return default(Policy1).Order;
+                }
+                else if (typeof(T) == typeof(T2))
+                {
+                    return default(Policy2).Order;
+                }
+                else throw new ArgumentException(nameof(T));
+            }
         }
-        class TaskNode<T1, T2, T3> : TaskNode
+        class TaskNode<T1, Policy1, T2, Policy2, T3, Policy3> : TaskNode
             where T1 : class
             where T2 : class
             where T3 : class
+            where Policy1 : struct, IAccessPolicy
+            where Policy2 : struct, IAccessPolicy
+            where Policy3 : struct, IAccessPolicy
         {
             private readonly T1 i1;
             private readonly T2 i2;
@@ -190,6 +227,24 @@ namespace Soe.Threading
                 Dependency<T1>.Remove(i2, this);
                 Dependency<T3>.Remove(i3, this);
                 return base.Clear(ref dispatchableNodes);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override int GetOrder<T>()
+            {
+                if (typeof(T) == typeof(T1))
+                {
+                    return default(Policy1).Order;
+                }
+                else if (typeof(T) == typeof(T2))
+                {
+                    return default(Policy2).Order;
+                }
+                else if (typeof(T) == typeof(T3))
+                {
+                    return default(Policy3).Order;
+                }
+                else throw new ArgumentException(nameof(T));
             }
         }
     }

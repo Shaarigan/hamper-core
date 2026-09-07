@@ -1,7 +1,6 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace Soe.Threading
@@ -45,13 +44,13 @@ namespace Soe.Threading
             this.tail = 0;
         }
         
-        public int Enqueue<Accessor>(in Accessor array, T value)
+        public int Enqueue<Accessor>(ref Accessor array, T value)
             where Accessor : IArrayAccessor<T?>
         {
         Head:
             using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))
             {
-                if (TryEnqueue(array, value, out int index))
+                if (TryEnqueue(ref array, value, out int index))
                 {
                     return index;
                 }
@@ -69,13 +68,13 @@ namespace Soe.Threading
                 }
                 else
                 {
-                    Grow(array);
+                    Grow(ref array);
                     goto Head;
                 }
             }
         }
 
-        public void Grow<Accessor>(in Accessor array)
+        public void Grow<Accessor>(ref Accessor array)
             where Accessor : IArrayAccessor<T?>
         {
             int capacityBits = array.Length - 1;
@@ -98,7 +97,7 @@ namespace Soe.Threading
             }
         }
 
-        public bool TryEnqueue<Accessor>(in Accessor array, T value, out int index)
+        public bool TryEnqueue<Accessor>(ref Accessor array, T value, out int index)
             where Accessor : IArrayAccessor<T?>
         {
             int capacityBits = array.Length - 1;
@@ -120,7 +119,7 @@ namespace Soe.Threading
             }
         }
 
-        public bool TryDequeue<Accessor>(in Accessor array, out T? value)
+        public bool TryDequeue<Accessor>(ref Accessor array, out T? value)
             where Accessor : IArrayAccessor<T?>
         {
             if (Count > 0)

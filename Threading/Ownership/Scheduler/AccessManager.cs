@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Soe.Collections.Inline;
 
 namespace Soe.Threading
 {
@@ -58,21 +59,22 @@ namespace Soe.Threading
         
         public static Task<IAccessHandle> BorrowAsync<T, Policy>(T instance)
             where T : class
-            where Policy : IAccessPolicy
+            where Policy : struct, IAccessPolicy
         {
-            TaskNode node = new TaskNode<T>(instance);
+            TaskNode node = new TaskNode<T, Policy>(instance);
             if (!Dependency<T>.Append<Policy>(instance, node))
             {
                 node.SignalNode();
             }
+            else node.SetInitialized();
             return node;
         }
         
         public static Task<IAccessHandle> BorrowAsync<T1, Policy1, T2, Policy2>(T1 i1, T2 i2)
             where T1 : class
             where T2 : class
-            where Policy1 : IAccessPolicy
-            where Policy2 : IAccessPolicy
+            where Policy1 : struct, IAccessPolicy
+            where Policy2 : struct, IAccessPolicy
         {
             DependencyArray2 array = default;
             array[0] = new DependencyProxy(Dependency<T1>.Append<Policy1>, i1);
@@ -83,7 +85,7 @@ namespace Soe.Threading
                 (array[0], array[1]) =  (array[1], array[0]);
             }
 
-            TaskNode node = new TaskNode<T1, T2>(i1, i2);
+            TaskNode node = new TaskNode<T1, Policy1, T2, Policy2>(i1, i2);
             for (int i = 0; i < 2; i++)
             {
                 array[i].Append(array[i].Instance, node);
@@ -92,15 +94,16 @@ namespace Soe.Threading
             {
                 node.SignalNode();
             }
+            else node.SetInitialized();
             return node;
         }
         public static Task<IAccessHandle> BorrowAsync<T1, Policy1, T2, Policy2, T3, Policy3>(T1 i1, T2 i2, T3 i3)
             where T1 : class
             where T2 : class
             where T3 : class
-            where Policy1 : IAccessPolicy
-            where Policy2 : IAccessPolicy
-            where Policy3 : IAccessPolicy
+            where Policy1 : struct, IAccessPolicy
+            where Policy2 : struct, IAccessPolicy
+            where Policy3 : struct, IAccessPolicy
         {
             DependencyArray4 array = default;
             array[0] = new HashedDependencyProxy(Dependency<T1>.Append<Policy1>, i1);
@@ -110,7 +113,7 @@ namespace Soe.Threading
             Span<HashedDependencyProxy> dependencies = MemoryMarshal.CreateSpan(ref array.element0, 3);
             dependencies.Sort(Compare);
             
-            TaskNode node = new TaskNode<T1, T2>(i1, i2);
+            TaskNode node = new TaskNode<T1, Policy1, T2, Policy2, T3, Policy3>(i1, i2, i3);
             for (int i = 0; i < 3; i++)
             {
                 array[i].Append(array[i].Instance, node);
@@ -119,6 +122,7 @@ namespace Soe.Threading
             {
                 node.SignalNode();
             }
+            else node.SetInitialized();
             return node;
         }
 
@@ -138,7 +142,15 @@ namespace Soe.Threading
         
         static void Return(IAccessHandle handle)
         {
-            
+            if (handle is TaskNode task)
+            {
+                SmallArray<TaskNode, SmallArray16<TaskNode>> dispatchableNodes = default;
+                for (int i = task.Clear(ref dispatchableNodes) - 1; i >= 0; i--)
+                {
+                    dispatchableNodes[i].SignalNode();
+                }
+            }
+            else throw new ArgumentException(nameof(handle));
         }
     }
 }

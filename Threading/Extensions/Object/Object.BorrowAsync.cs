@@ -16,7 +16,7 @@ namespace Soe.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BorrowAwaitable<T, Policy> BorrowAsync<T, Policy>(this T instance)
             where T : class
-            where Policy : IAccessPolicy
+            where Policy : struct, IAccessPolicy
         {
             return new BorrowAwaitable<T, Policy>(instance);
         }
@@ -24,7 +24,7 @@ namespace Soe.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BorrowAwaitable<T, Policy> BorrowAsync<T, Policy>(this T instance, Policy policy)
             where T : class
-            where Policy : IAccessPolicy
+            where Policy : struct, IAccessPolicy
         {
             return BorrowAsync<T, Policy>(instance);
         }

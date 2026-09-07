@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using Soe.Collections.HashSet;
+using Soe.Collections.Inline;
 
 namespace Soe.Threading
 {
@@ -15,6 +16,9 @@ namespace Soe.Threading
     {
         struct TaskList : IHashContainer<object>
         {
+            private SmallArray<TaskNode?, SmallArray4<TaskNode?>> tasks;
+            private ConcurrentBuffer<TaskNode> buffer;
+            
             private readonly int hash;
 
             /// <inheritdoc/>
@@ -44,6 +48,58 @@ namespace Soe.Threading
             {
                 this.key = key;
                 this.hash = hash;
+            }
+
+            public bool Append<T, Policy>(TaskNode task)
+                where T : class
+                where Policy : struct, IAccessPolicy
+            {
+                Policy policy = default;
+                int index = buffer.Enqueue(ref tasks, task);
+                using (ScopedDisposable.Acquire<ConcurrentBuffer<TaskNode>, ConcurrentBuffer<TaskNode>.SharedOperation>(ref buffer))
+                {
+                    SpinWait wait = new SpinWait();
+                    
+                    int moduloMask = tasks.Length - 1;
+                    for (int beforeTail = ((buffer.Tail - 1) & moduloMask), i = ((index - 1) & moduloMask); i != beforeTail; i = ((i - 1) & moduloMask))
+                    {
+                        while (tasks[i]?.State < TaskNodeState.Initialized)
+                        {
+                            wait.SpinOnce();
+                        }
+                        int order = tasks[i]?.GetOrder<T>() ?? int.MaxValue;
+                        if (policy.IsConflict(order)) 
+                        { 
+                            tasks[i]!.AppendChild(task); 
+                            for (i = ((i - 1) & moduloMask); i != beforeTail; i = ((i - 1) & moduloMask)) 
+                            {
+                                int nextOrder = tasks[i]?.GetOrder<T>() ?? int.MaxValue;
+                                if (order == nextOrder)
+                                {
+                                    tasks[i]!.AppendChild(task); 
+                                }
+                            }
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }
+
+            public void Remove(TaskNode task)
+            {
+                using (ScopedDisposable.Acquire<ConcurrentBuffer<TaskNode>, ConcurrentBuffer<TaskNode>.ExclusiveOperation>(ref buffer))
+                {
+                    int index = tasks.IndexOf(task);
+                    if (index >= 0)
+                    {
+                        int moduloMask = tasks.Length - 1;
+                        
+                        (tasks[index], tasks[buffer.Tail & moduloMask]) = (tasks[buffer.Tail & moduloMask], tasks[index]);
+                        buffer.TryDequeue(ref tasks, out _);
+                    }
+                    else throw new IndexOutOfRangeException();
+                }
             }
         }
     }

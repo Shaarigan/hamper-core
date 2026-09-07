@@ -12,6 +12,11 @@ namespace Soe.Threading
     #endif
     interface IAccessPolicy
     {
-        
+        int Order
+        {
+            get;
+        }
+
+        bool IsConflict(int order);
     }
 }

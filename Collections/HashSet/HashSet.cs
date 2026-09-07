@@ -22,17 +22,16 @@ namespace Soe.Collections.HashSet
         public const float DefaultLoadFactor = 0.86f;
     }
     
+    [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     #if EXPORT_HAMPER_CORE_COLLECTIONS_HASHSET
     public
     #else
     internal
     #endif
-    struct HashSet<T, Container>
+        struct HashSet<T, Container>(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor)
         where Container : struct, IHashContainer<T>
     {
-        private readonly IEqualityComparer<T> comparer;
-        private readonly float loadFactor;
-        private int moduloMask;
+        private int moduloMask = 0;
         
         private Container[]? items;
         /// <summary>
@@ -74,14 +73,6 @@ namespace Soe.Collections.HashSet
             get { return version; }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public HashSet(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor)
-        {
-            this.comparer = comparer;
-            this.loadFactor = loadFactor;
-            this.moduloMask = 0;
-        }
-        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
