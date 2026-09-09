@@ -12,7 +12,7 @@ namespace Soe.Threading
     #endif
     readonly struct BorrowAwaiter : INotifyCompletion
     {
-        private readonly Task<AccessManager.IAccessHandle> task;
+        private readonly Task<IAccessHandle> task;
 
         public bool IsCompleted
         {
@@ -21,7 +21,7 @@ namespace Soe.Threading
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BorrowAwaiter(Task<AccessManager.IAccessHandle> task)
+        public BorrowAwaiter(Task<IAccessHandle> task)
         {
             this.task = task;
         }
@@ -33,9 +33,9 @@ namespace Soe.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ScopedDisposable<AccessManager.IAccessHandle, AccessManager.ManagedAccessPolicy> GetResult()
+        public ScopedDisposable<IAccessHandle, AccessManager.ManagedAccessPolicy> GetResult()
         {
-            return new ScopedDisposable<AccessManager.IAccessHandle, AccessManager.ManagedAccessPolicy>(task.Result);
+            return new ScopedDisposable<IAccessHandle, AccessManager.ManagedAccessPolicy>(task.Result);
         }
     }
 }
