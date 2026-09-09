@@ -70,14 +70,15 @@ namespace Soe.Threading
                         int order = tasks[i]?.GetOrder<T>() ?? int.MaxValue;
                         if (policy.IsConflict(order)) 
                         { 
-                            tasks[i]!.AppendChild(task); 
+                            tasks[i]!.AppendChild(task);
                             for (i = ((i - 1) & moduloMask); i != beforeTail; i = ((i - 1) & moduloMask)) 
                             {
                                 int nextOrder = tasks[i]?.GetOrder<T>() ?? int.MaxValue;
                                 if (order == nextOrder)
                                 {
-                                    tasks[i]!.AppendChild(task); 
+                                    tasks[i]!.AppendChild(task);
                                 }
+                                else break;
                             }
                             return true;
                         }

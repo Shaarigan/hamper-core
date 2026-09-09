@@ -46,8 +46,10 @@ namespace Soe.Threading
                 using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.ExclusiveOperation>(ref lockVariable))   
                 {  
                     ref TaskList taskList = ref tasks.Emplace(instance, hash, index, distance, version);
-                    taskList = new TaskList(hash, instance);
-                    
+                    if(!taskList.IsValid)
+                    {
+                        taskList = new TaskList(hash, instance);
+                    }
                     return taskList.Append<T, Policy>(node);
                 }
             }

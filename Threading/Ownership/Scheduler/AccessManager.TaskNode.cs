@@ -1,6 +1,7 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Soe.Collections.Embedded;
 using Soe.Collections.HashSet;
@@ -27,6 +28,9 @@ namespace Soe.Threading
         { }
         abstract class TaskNode : IAccessHandle
         {
+            private static UInt64 idPool;
+            internal readonly UInt64 Id;
+            
             SmallArray<TaskNode?, SmallArray2<TaskNode?>> array;
             ConcurrentBuffer<TaskNode> children;
             
@@ -54,6 +58,7 @@ namespace Soe.Threading
                 this.array = default;
                 this.children = default;
                 this.signal = new TaskCompletionSource<IAccessHandle>();
+                this.Id = Interlocked.Increment(ref idPool);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -130,6 +135,7 @@ namespace Soe.Threading
                 {
                     Volatile.Write(ref state, (int)TaskNodeState.Running);
                 }
+                else Debugger.Break();
             }
         }
 
@@ -182,7 +188,7 @@ namespace Soe.Threading
             public override int Clear<Accessor>(ref Accessor dispatchableNodes)
             {
                 Dependency<T1>.Remove(i1, this);
-                Dependency<T1>.Remove(i2, this);
+                Dependency<T2>.Remove(i2, this);
                 return base.Clear(ref dispatchableNodes);
             }
             
@@ -224,7 +230,7 @@ namespace Soe.Threading
             public override int Clear<Accessor>(ref Accessor dispatchableNodes)
             {
                 Dependency<T1>.Remove(i1, this);
-                Dependency<T1>.Remove(i2, this);
+                Dependency<T2>.Remove(i2, this);
                 Dependency<T3>.Remove(i3, this);
                 return base.Clear(ref dispatchableNodes);
             }

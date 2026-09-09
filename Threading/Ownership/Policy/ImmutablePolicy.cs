@@ -16,14 +16,14 @@ namespace Soe.Threading
         public int Order
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return 1; }
+            get { return (int)AccessPermission.Immutable; }
         }
         
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsConflict(int order)
         {
-            return (order != 1);
+            return (order < (int)AccessPermission.Immutable);
         }
     }
 }

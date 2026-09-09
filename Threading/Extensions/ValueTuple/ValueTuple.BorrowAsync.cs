@@ -14,8 +14,8 @@ namespace Soe.Threading
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BorrowAwaitable<T1, Policy1, T2, Policy2> BorrowAsync<T1, Policy1, T2, Policy2>(this ValueTuple<T1, T2> instances)
-            where T1 : class, IOwnable<T1>
-            where T2 : class, IOwnable<T2>
+            where T1 : class
+            where T2 : class
             where Policy1 : struct, IAccessPolicy
             where Policy2 : struct, IAccessPolicy
         {
@@ -25,8 +25,8 @@ namespace Soe.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BorrowAwaitable<T1, Policy1, T2, Policy2> BorrowAsync<T1, Policy1, T2, Policy2>(
             this ValueTuple<T1, T2> instances, Policy1 policy1, Policy2 policy2)
-            where T1 : class, IOwnable<T1>
-            where T2 : class, IOwnable<T2>
+            where T1 : class
+            where T2 : class
             where Policy1 : struct, IAccessPolicy
             where Policy2 : struct, IAccessPolicy
         {
@@ -35,9 +35,9 @@ namespace Soe.Threading
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3> BorrowAsync<T1, Policy1, T2, Policy2, T3, Policy3>(this ValueTuple<T1, T2, T3> instances)
-            where T1 : class, IOwnable<T1>
-            where T2 : class, IOwnable<T2>
-            where T3 : class, IOwnable<T3>
+            where T1 : class
+            where T2 : class
+            where T3 : class
             where Policy1 : struct, IAccessPolicy
             where Policy2 : struct, IAccessPolicy
             where Policy3 : struct, IAccessPolicy
@@ -48,9 +48,9 @@ namespace Soe.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3> BorrowAsync<T1, Policy1, T2, Policy2, T3,
             Policy3>(this ValueTuple<T1, T2, T3> instances, Policy1 policy1, Policy2 policy2, Policy3 policy3)
-            where T1 : class, IOwnable<T1>
-            where T2 : class, IOwnable<T2>
-            where T3 : class, IOwnable<T3>
+            where T1 : class
+            where T2 : class
+            where T3 : class
             where Policy1 : struct, IAccessPolicy
             where Policy2 : struct, IAccessPolicy
             where Policy3 : struct, IAccessPolicy

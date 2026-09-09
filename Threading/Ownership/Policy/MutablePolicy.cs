@@ -16,7 +16,7 @@ namespace Soe.Threading
         public int Order
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return 0; }
+            get { return (int)AccessPermission.Mutable; }
         }
         
         /// <inheritdoc/>
