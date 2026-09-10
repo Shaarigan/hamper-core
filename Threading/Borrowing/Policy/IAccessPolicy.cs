@@ -5,6 +5,9 @@ using System;
 
 namespace Soe.Threading
 {
+    /// <summary>
+    /// A policy managing how access to the underlying object instance is scheduled
+    /// </summary>
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
@@ -12,11 +15,19 @@ namespace Soe.Threading
     #endif
     interface IAccessPolicy
     {
+        /// <summary>
+        /// Gets a number related to the current access order of this policy
+        /// </summary>
         int Order
         {
             get;
         }
 
-        bool IsConflict(int order);
+        /// <summary>
+        /// Determines if the provided order ID is in conflict with this policy 
+        /// </summary>
+        /// <param name="order">An order ID to compare</param>
+        /// <returns>True if access conflicts with the provided order ID, false otherwise</returns>
+        bool IsConflicting(int order);
     }
 }

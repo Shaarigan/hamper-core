@@ -5,6 +5,10 @@ using System.Runtime.CompilerServices;
 
 namespace Soe.Threading
 {
+    /// <summary>
+    /// Requests immutable access to an object instance
+    /// </summary>
+    /// <remarks>This policy allows parallel immutable access</remarks>
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
@@ -16,14 +20,14 @@ namespace Soe.Threading
         public int Order
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return (int)AccessPermission.Immutable; }
+            get { return (int)AccessType.Immutable; }
         }
         
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsConflict(int order)
+        public bool IsConflicting(int order)
         {
-            return (order < (int)AccessPermission.Immutable);
+            return (order < (int)AccessType.Immutable);
         }
     }
 }

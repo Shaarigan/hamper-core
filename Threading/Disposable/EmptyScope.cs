@@ -14,14 +14,14 @@ namespace Soe.Threading
     #else
     internal
     #endif
-    readonly struct EmptyRefScope<T> : IRefScopePolicy<T>
+    readonly struct EmptyScope<T> : IScopePolicy<T>
     {
         /// <summary>
         /// Does nothing
         /// </summary>
         /// <param name="parameter">Unused</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Acquire(ref T parameter)
+        public void Initialize(in T parameter)
         { }
 
         /// <summary>
@@ -29,7 +29,7 @@ namespace Soe.Threading
         /// </summary>
         /// <param name="parameter">Unused</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose(ref T parameter)
+        public void Dispose(in T parameter)
         { }
     }
 }

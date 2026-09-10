@@ -5,6 +5,10 @@ using System.Runtime.CompilerServices;
 
 namespace Soe.Threading
 {
+    /// <summary>
+    /// Requests fully mutable access to an object instance
+    /// </summary>
+    /// <remarks>This policy allows exclusive access only</remarks>
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
@@ -16,12 +20,12 @@ namespace Soe.Threading
         public int Order
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return (int)AccessPermission.Mutable; }
+            get { return (int)AccessType.Mutable; }
         }
         
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsConflict(int order)
+        public bool IsConflicting(int order)
         {
             return true;
         }

@@ -1,11 +1,14 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Soe.Threading
 {
+    /// <summary>
+    /// Manages thread-safe adding to and exclusive reading from the underlying array
+    /// </summary>
+    /// <typeparam name="T">A reference type</typeparam>
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
@@ -18,6 +21,9 @@ namespace Soe.Threading
         private UInt32 head;
         private UInt32 tail;
 
+        /// <summary>
+        /// Gets the element index logically pointing to index[0] of the buffer
+        /// </summary>
         public int Tail
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -27,6 +33,9 @@ namespace Soe.Threading
             }
         }
         
+        /// <summary>
+        /// Gets the logical number of elements in the buffer
+        /// </summary>
         public int Count
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,6 +46,9 @@ namespace Soe.Threading
             }
         }
 
+        /// <summary>
+        /// Initializes this instance of the buffer
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConcurrentBuffer()
         {
@@ -45,6 +57,14 @@ namespace Soe.Threading
             this.tail = 0;
         }
         
+        /// <summary>
+        /// Enqueues the provided element into the buffer
+        /// </summary>
+        /// <param name="array">The array this buffer instance operates on</param>
+        /// <param name="value">The element to add</param>
+        /// <returns>The index at which the element was added into the array</returns>
+        /// <remarks>This operation is operation may lead to an additional Grow operation to be performed. The
+        /// calling code is responsible to secure other operations using this buffer's policies</remarks>
         public int Enqueue<Accessor>(ref Accessor array, T value)
             where Accessor : IArrayAccessor<T?>
         {
@@ -75,6 +95,12 @@ namespace Soe.Threading
             }
         }
 
+        /// <summary>
+        /// Resizes the underlying array and moves the content of the buffer to keep integrity
+        /// </summary>
+        /// <param name="array">The array this buffer instance operates on</param>
+        /// <remarks>This operation should be secured using the exclusive policy. The calling code is responsible to
+        /// keep the buffer integrity intact</remarks>
         public void Grow<Accessor>(ref Accessor array)
             where Accessor : IArrayAccessor<T?>
         {
@@ -98,6 +124,15 @@ namespace Soe.Threading
             }
         }
 
+        /// <summary>
+        /// Tries to enqueue the provided element into the buffer
+        /// </summary>
+        /// <param name="array">The array this buffer instance operates on</param>
+        /// <param name="value">The element to add</param>
+        /// <param name="index">The index at which the element was added into the array</param>
+        /// <returns>True if the element was successfully added into the buffer, false otherwise</returns>
+        /// <remarks>This operation might be secured using the shared policy. The calling code is responsible to
+        /// keep the buffer integrity intact</remarks>
         public bool TryEnqueue<Accessor>(ref Accessor array, T value, out int index)
             where Accessor : IArrayAccessor<T?>
         {
@@ -120,6 +155,14 @@ namespace Soe.Threading
             }
         }
 
+        /// <summary>
+        /// Tries to obtain the element at the logical index[0] and returns its values
+        /// </summary>
+        /// <param name="array">The array this buffer instance operates on</param>
+        /// <param name="value">The element contained in the buffer</param>
+        /// <returns>True if the element was obtained from the buffer, false otherwise</returns>
+        /// <remarks>This operation might be secured using the shared policy. The calling code is responsible to
+        /// keep the buffer integrity intact</remarks>
         public bool TryDequeue<Accessor>(ref Accessor array, out T? value)
             where Accessor : IArrayAccessor<T?>
         {
@@ -127,7 +170,7 @@ namespace Soe.Threading
             if (Count > 0)
             {
                 int capacityBits = array.Length - 1;
-                (array[(int)(tail & capacityBits)], value) = (value, array[(int)(tail + 1) & capacityBits]);
+                (array[(int)(tail & capacityBits)], value) = (value, array[(int)(tail & capacityBits)]);
 
                 Interlocked.Increment(ref tail);
                 return (value != null);
@@ -135,6 +178,9 @@ namespace Soe.Threading
             else return false;
         }
 
+        /// <summary>
+        /// Resets the buffer to an empty state
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reset()
         {

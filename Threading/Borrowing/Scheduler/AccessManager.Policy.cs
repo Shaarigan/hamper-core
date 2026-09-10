@@ -12,11 +12,28 @@ namespace Soe.Threading
     #endif
     static partial class AccessManager
     {
+        /// <summary>
+        /// A policy that manages the trigger chain of scheduled tasks
+        /// </summary>
         public readonly struct ManagedAccessPolicy : IScopePolicy<IAccessHandle>
         {
+            /// <summary>
+            /// Sets the instance of the access handle to be used by this thread
+            /// </summary>
+            /// <param name="instance">The access handle managing the current scope</param>
+            public void Initialize(in IAccessHandle instance)
+            {
+                current = instance;
+            }
+
+            /// <summary>
+            /// Returns the instance of the access handle and triggers waiting tasks if any
+            /// </summary>
+            /// <param name="instance">The access handle managing the current scope</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Dispose(in IAccessHandle instance)
             {
+                current = null;
                 Return(instance);
             }
         }

@@ -14,13 +14,15 @@ namespace Soe.Threading
     #endif
     static partial class AccessManager
     {
+        /// <summary>
+        /// Manages the dependency graph of the corresponding object instance
+        /// </summary>
         struct TaskList : IHashContainer<object>
         {
             private SmallArray<TaskNode?, SmallArray4<TaskNode?>> tasks;
             private ConcurrentBuffer<TaskNode> buffer;
             
             private readonly int hash;
-
             /// <inheritdoc/>
             public int Hash
             {
@@ -29,7 +31,6 @@ namespace Soe.Threading
             }
 
             private readonly object key;
-            
             /// <inheritdoc/>
             public object Key
             {
@@ -42,7 +43,21 @@ namespace Soe.Threading
             {
                 get { return (hash != 0 && key != null); }
             }
+
+            /// <summary>
+            /// Gets the number of tasks currently in the dependency graph
+            /// </summary>
+            public int Count
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get { return buffer.Count; }
+            }
             
+            /// <summary>
+            /// Initializes a new instance of the dependency graph
+            /// </summary>
+            /// <param name="hash">The hash code of the object instance</param>
+            /// <param name="key">The corresponding object instance</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public TaskList(int hash, object key)
             {
@@ -50,6 +65,13 @@ namespace Soe.Threading
                 this.hash = hash;
             }
 
+            /// <summary>
+            /// Appends a <see cref="TaskNode"/> instance to the access graph of the provided object
+            /// </summary>
+            /// <param name="task">The task instance to append</param>
+            /// <typeparam name="T">A reference type</typeparam>
+            /// <typeparam name="Policy">The desired access policy</typeparam>
+            /// <returns>True if the node has other tasks to wait on, false otherwise</returns>
             public bool Append<T, Policy>(TaskNode task)
                 where T : class
                 where Policy : struct, IAccessPolicy
@@ -59,20 +81,27 @@ namespace Soe.Threading
                 using (ScopedDisposable.Acquire<ConcurrentBuffer<TaskNode>, ConcurrentBuffer<TaskNode>.SharedOperation>(ref buffer))
                 {
                     SpinWait wait = new SpinWait();
-                    
                     int moduloMask = tasks.Length - 1;
+                    
+                    // Iterate from the current emplacement index to the tail of the buffer to find potential parents
                     for (int beforeTail = ((buffer.Tail - 1) & moduloMask), i = ((index - 1) & moduloMask); i != beforeTail; i = ((i - 1) & moduloMask))
                     {
                         while (tasks[i]?.State < TaskNodeState.Initialized)
                         {
+                            // Wait until potential parent is fully initialized to prevent AB problems
                             wait.SpinOnce();
                         }
                         int order = tasks[i]?.GetOrder<T>() ?? int.MaxValue;
-                        if (policy.IsConflict(order)) 
+                        if (policy.IsConflicting(order)) 
                         { 
+                            // A task conflicts with the desired access policy, add this as child
+                            
                             tasks[i]!.AppendChild(task);
                             for (i = ((i - 1) & moduloMask); i != beforeTail; i = ((i - 1) & moduloMask)) 
                             {
+                                // Test if there are other tasks with the same conflict, this needs to wait
+                                // on all of those tasks to complete first
+                                
                                 int nextOrder = tasks[i]?.GetOrder<T>() ?? int.MaxValue;
                                 if (order == nextOrder)
                                 {
@@ -87,6 +116,11 @@ namespace Soe.Threading
                 }
             }
 
+            /// <summary>
+            /// Removes the appended <see cref="TaskNode"/> instance from the access graph of the provided object
+            /// </summary>
+            /// <param name="task">The corresponding task instance to remove</param>
+            /// <exception cref="IndexOutOfRangeException">Thrown if the task was not found in the access graph</exception>
             public void Remove(TaskNode task)
             {
                 using (ScopedDisposable.Acquire<ConcurrentBuffer<TaskNode>, ConcurrentBuffer<TaskNode>.ExclusiveOperation>(ref buffer))

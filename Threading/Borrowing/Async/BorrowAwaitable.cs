@@ -5,23 +5,26 @@ using System.Runtime.CompilerServices;
 
 namespace Soe.Threading
 {
+    /// <summary>
+    /// Helper struct to make the scheduler operation awaitable
+    /// </summary>
+    /// <param name="instance">An object instance to request access to</param>
+    /// <typeparam name="T">A reference type</typeparam>
+    /// <typeparam name="Policy">The desired access policy</typeparam>
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
+    [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal
     #endif
-    readonly struct BorrowAwaitable<T, Policy>
+    readonly struct BorrowAwaitable<T, Policy>(T instance)
         where T : class
         where Policy : struct, IAccessPolicy
     {
-        private readonly T instance;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BorrowAwaitable(T instance)
-        {
-            this.instance = instance;
-        }
-        
+        /// <summary>
+        /// Gets an awaiter used to await the requested scope to be accessible
+        /// </summary>
+        /// <returns>An awaiter instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BorrowAwaiter GetAwaiter()
         {
@@ -29,27 +32,31 @@ namespace Soe.Threading
         }
     }
     
+    /// <summary>
+    /// Helper struct to make the scheduler operation awaitable
+    /// </summary>
+    /// <param name="i1">An object instance to request access to</param>
+    /// <param name="i2">An object instance to request access to</param>
+    /// <typeparam name="T1">A reference type</typeparam>
+    /// <typeparam name="Policy1">The desired access policy</typeparam>
+    /// <typeparam name="T2">A reference type</typeparam>
+    /// <typeparam name="Policy2">The desired access policy</typeparam>
+    [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
     #endif
-    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2>
+    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2>(T1 i1, T2 i2)
         where T1 : class
         where T2 : class
         where Policy1 : struct, IAccessPolicy
         where Policy2 : struct, IAccessPolicy
     {
-        private readonly T1 i1;
-        private readonly T2 i2;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BorrowAwaitable(T1 i1, T2 i2)
-        {
-            this.i1 = i1;
-            this.i2 = i2;
-        }
-        
+        /// <summary>
+        /// Gets an awaiter used to await the requested scope to be accessible
+        /// </summary>
+        /// <returns>An awaiter instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BorrowAwaiter GetAwaiter()
         {
@@ -57,12 +64,25 @@ namespace Soe.Threading
         }
     }
     
+    /// <summary>
+    /// Helper struct to make the scheduler operation awaitable
+    /// </summary>
+    /// <param name="i1">An object instance to request access to</param>
+    /// <param name="i2">An object instance to request access to</param>
+    /// <param name="i3">An object instance to request access to</param>
+    /// <typeparam name="T1">A reference type</typeparam>
+    /// <typeparam name="Policy1">The desired access policy</typeparam>
+    /// <typeparam name="T2">A reference type</typeparam>
+    /// <typeparam name="Policy2">The desired access policy</typeparam>
+    /// <typeparam name="T3">A reference type</typeparam>
+    /// <typeparam name="Policy3">The desired access policy</typeparam>
+    [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
     #endif
-    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3>
+    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3>(T1 i1, T2 i2, T3 i3)
         where T1 : class
         where T2 : class
         where T3 : class
@@ -70,18 +90,10 @@ namespace Soe.Threading
         where Policy2 : struct, IAccessPolicy
         where Policy3 : struct, IAccessPolicy
     {
-        private readonly T1 i1;
-        private readonly T2 i2;
-        private readonly T3 i3;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BorrowAwaitable(T1 i1, T2 i2, T3 i3)
-        {
-            this.i1 = i1;
-            this.i2 = i2;
-            this.i3 = i3;
-        }
-        
+        /// <summary>
+        /// Gets an awaiter used to await the requested scope to be accessible
+        /// </summary>
+        /// <returns>An awaiter instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BorrowAwaiter GetAwaiter()
         {
@@ -89,12 +101,28 @@ namespace Soe.Threading
         }
     }
     
+    /// <summary>
+    /// Helper struct to make the scheduler operation awaitable
+    /// </summary>
+    /// <param name="i1">An object instance to request access to</param>
+    /// <param name="i2">An object instance to request access to</param>
+    /// <param name="i3">An object instance to request access to</param>
+    /// <param name="i4">An object instance to request access to</param>
+    /// <typeparam name="T1">A reference type</typeparam>
+    /// <typeparam name="Policy1">The desired access policy</typeparam>
+    /// <typeparam name="T2">A reference type</typeparam>
+    /// <typeparam name="Policy2">The desired access policy</typeparam>
+    /// <typeparam name="T3">A reference type</typeparam>
+    /// <typeparam name="Policy3">The desired access policy</typeparam>
+    /// <typeparam name="T4">A reference type</typeparam>
+    /// <typeparam name="Policy4">The desired access policy</typeparam>
+    [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
     #endif
-    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4>
+    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4>(T1 i1, T2 i2, T3 i3, T4 i4)
         where T1 : class
         where T2 : class
         where T3 : class
@@ -104,20 +132,10 @@ namespace Soe.Threading
         where Policy3 : struct, IAccessPolicy
         where Policy4 : struct, IAccessPolicy
     {
-        private readonly T1 i1;
-        private readonly T2 i2;
-        private readonly T3 i3;
-        private readonly T4 i4;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BorrowAwaitable(T1 i1, T2 i2, T3 i3, T4 i4)
-        {
-            this.i1 = i1;
-            this.i2 = i2;
-            this.i3 = i3;
-            this.i4 = i4;
-        }
-        
+        /// <summary>
+        /// Gets an awaiter used to await the requested scope to be accessible
+        /// </summary>
+        /// <returns>An awaiter instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BorrowAwaiter GetAwaiter()
         {
@@ -125,12 +143,31 @@ namespace Soe.Threading
         }
     }
     
+    /// <summary>
+    /// Helper struct to make the scheduler operation awaitable
+    /// </summary>
+    /// <param name="i1">An object instance to request access to</param>
+    /// <param name="i2">An object instance to request access to</param>
+    /// <param name="i3">An object instance to request access to</param>
+    /// <param name="i4">An object instance to request access to</param>
+    /// <param name="i5">An object instance to request access to</param>
+    /// <typeparam name="T1">A reference type</typeparam>
+    /// <typeparam name="Policy1">The desired access policy</typeparam>
+    /// <typeparam name="T2">A reference type</typeparam>
+    /// <typeparam name="Policy2">The desired access policy</typeparam>
+    /// <typeparam name="T3">A reference type</typeparam>
+    /// <typeparam name="Policy3">The desired access policy</typeparam>
+    /// <typeparam name="T4">A reference type</typeparam>
+    /// <typeparam name="Policy4">The desired access policy</typeparam>
+    /// <typeparam name="T5">A reference type</typeparam>
+    /// <typeparam name="Policy5">The desired access policy</typeparam>
+    [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
     #endif
-    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5>
+    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5>(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5)
         where T1 : class
         where T2 : class
         where T3 : class
@@ -142,22 +179,10 @@ namespace Soe.Threading
         where Policy4 : struct, IAccessPolicy
         where Policy5 : struct, IAccessPolicy
     {
-        private readonly T1 i1;
-        private readonly T2 i2;
-        private readonly T3 i3;
-        private readonly T4 i4;
-        private readonly T5 i5;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BorrowAwaitable(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5)
-        {
-            this.i1 = i1;
-            this.i2 = i2;
-            this.i3 = i3;
-            this.i4 = i4;
-            this.i5 = i5;
-        }
-        
+        /// <summary>
+        /// Gets an awaiter used to await the requested scope to be accessible
+        /// </summary>
+        /// <returns>An awaiter instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BorrowAwaiter GetAwaiter()
         {
@@ -165,12 +190,34 @@ namespace Soe.Threading
         }
     }
     
+    /// <summary>
+    /// Helper struct to make the scheduler operation awaitable
+    /// </summary>
+    /// <param name="i1">An object instance to request access to</param>
+    /// <param name="i2">An object instance to request access to</param>
+    /// <param name="i3">An object instance to request access to</param>
+    /// <param name="i4">An object instance to request access to</param>
+    /// <param name="i5">An object instance to request access to</param>
+    /// <param name="i6">An object instance to request access to</param>
+    /// <typeparam name="T1">A reference type</typeparam>
+    /// <typeparam name="Policy1">The desired access policy</typeparam>
+    /// <typeparam name="T2">A reference type</typeparam>
+    /// <typeparam name="Policy2">The desired access policy</typeparam>
+    /// <typeparam name="T3">A reference type</typeparam>
+    /// <typeparam name="Policy3">The desired access policy</typeparam>
+    /// <typeparam name="T4">A reference type</typeparam>
+    /// <typeparam name="Policy4">The desired access policy</typeparam>
+    /// <typeparam name="T5">A reference type</typeparam>
+    /// <typeparam name="Policy5">The desired access policy</typeparam>
+    /// <typeparam name="T6">A reference type</typeparam>
+    /// <typeparam name="Policy6">The desired access policy</typeparam>
+    [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
     #endif
-    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6>
+    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6>(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5, T6 i6)
         where T1 : class
         where T2 : class
         where T3 : class
@@ -184,24 +231,10 @@ namespace Soe.Threading
         where Policy5 : struct, IAccessPolicy
         where Policy6 : struct, IAccessPolicy
     {
-        private readonly T1 i1;
-        private readonly T2 i2;
-        private readonly T3 i3;
-        private readonly T4 i4;
-        private readonly T5 i5;
-        private readonly T6 i6;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BorrowAwaitable(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5, T6 i6)
-        {
-            this.i1 = i1;
-            this.i2 = i2;
-            this.i3 = i3;
-            this.i4 = i4;
-            this.i5 = i5;
-            this.i6 = i6;
-        }
-        
+        /// <summary>
+        /// Gets an awaiter used to await the requested scope to be accessible
+        /// </summary>
+        /// <returns>An awaiter instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BorrowAwaiter GetAwaiter()
         {
@@ -209,12 +242,37 @@ namespace Soe.Threading
         }
     }
     
+    /// <summary>
+    /// Helper struct to make the scheduler operation awaitable
+    /// </summary>
+    /// <param name="i1">An object instance to request access to</param>
+    /// <param name="i2">An object instance to request access to</param>
+    /// <param name="i3">An object instance to request access to</param>
+    /// <param name="i4">An object instance to request access to</param>
+    /// <param name="i5">An object instance to request access to</param>
+    /// <param name="i6">An object instance to request access to</param>
+    /// <param name="i7">An object instance to request access to</param>
+    /// <typeparam name="T1">A reference type</typeparam>
+    /// <typeparam name="Policy1">The desired access policy</typeparam>
+    /// <typeparam name="T2">A reference type</typeparam>
+    /// <typeparam name="Policy2">The desired access policy</typeparam>
+    /// <typeparam name="T3">A reference type</typeparam>
+    /// <typeparam name="Policy3">The desired access policy</typeparam>
+    /// <typeparam name="T4">A reference type</typeparam>
+    /// <typeparam name="Policy4">The desired access policy</typeparam>
+    /// <typeparam name="T5">A reference type</typeparam>
+    /// <typeparam name="Policy5">The desired access policy</typeparam>
+    /// <typeparam name="T6">A reference type</typeparam>
+    /// <typeparam name="Policy6">The desired access policy</typeparam>
+    /// <typeparam name="T7">A reference type</typeparam>
+    /// <typeparam name="Policy7">The desired access policy</typeparam>
+    [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
     #endif
-    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6, T7, Policy7>
+    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6, T7, Policy7>(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5, T6 i6, T7 i7)
         where T1 : class
         where T2 : class
         where T3 : class
@@ -230,26 +288,10 @@ namespace Soe.Threading
         where Policy6 : struct, IAccessPolicy
         where Policy7 : struct, IAccessPolicy
     {
-        private readonly T1 i1;
-        private readonly T2 i2;
-        private readonly T3 i3;
-        private readonly T4 i4;
-        private readonly T5 i5;
-        private readonly T6 i6;
-        private readonly T7 i7;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BorrowAwaitable(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5, T6 i6, T7 i7)
-        {
-            this.i1 = i1;
-            this.i2 = i2;
-            this.i3 = i3;
-            this.i4 = i4;
-            this.i5 = i5;
-            this.i6 = i6;
-            this.i7 = i7;
-        }
-        
+        /// <summary>
+        /// Gets an awaiter used to await the requested scope to be accessible
+        /// </summary>
+        /// <returns>An awaiter instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BorrowAwaiter GetAwaiter()
         {
@@ -257,12 +299,40 @@ namespace Soe.Threading
         }
     }
     
+    /// <summary>
+    /// Helper struct to make the scheduler operation awaitable
+    /// </summary>
+    /// <param name="i1">An object instance to request access to</param>
+    /// <param name="i2">An object instance to request access to</param>
+    /// <param name="i3">An object instance to request access to</param>
+    /// <param name="i4">An object instance to request access to</param>
+    /// <param name="i5">An object instance to request access to</param>
+    /// <param name="i6">An object instance to request access to</param>
+    /// <param name="i7">An object instance to request access to</param>
+    /// <param name="i8">An object instance to request access to</param>
+    /// <typeparam name="T1">A reference type</typeparam>
+    /// <typeparam name="Policy1">The desired access policy</typeparam>
+    /// <typeparam name="T2">A reference type</typeparam>
+    /// <typeparam name="Policy2">The desired access policy</typeparam>
+    /// <typeparam name="T3">A reference type</typeparam>
+    /// <typeparam name="Policy3">The desired access policy</typeparam>
+    /// <typeparam name="T4">A reference type</typeparam>
+    /// <typeparam name="Policy4">The desired access policy</typeparam>
+    /// <typeparam name="T5">A reference type</typeparam>
+    /// <typeparam name="Policy5">The desired access policy</typeparam>
+    /// <typeparam name="T6">A reference type</typeparam>
+    /// <typeparam name="Policy6">The desired access policy</typeparam>
+    /// <typeparam name="T7">A reference type</typeparam>
+    /// <typeparam name="Policy7">The desired access policy</typeparam>
+    /// <typeparam name="T8">A reference type</typeparam>
+    /// <typeparam name="Policy8">The desired access policy</typeparam>
+    [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
     #endif
-    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6, T7, Policy7, T8, Policy8>
+    readonly struct BorrowAwaitable<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6, T7, Policy7, T8, Policy8>(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5, T6 i6, T7 i7, T8 i8)
         where T1 : class
         where T2 : class
         where T3 : class
@@ -280,28 +350,10 @@ namespace Soe.Threading
         where Policy7 : struct, IAccessPolicy
         where Policy8 : struct, IAccessPolicy
     {
-        private readonly T1 i1;
-        private readonly T2 i2;
-        private readonly T3 i3;
-        private readonly T4 i4;
-        private readonly T5 i5;
-        private readonly T6 i6;
-        private readonly T7 i7;
-        private readonly T8 i8;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BorrowAwaitable(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5, T6 i6, T7 i7, T8 i8)
-        {
-            this.i1 = i1;
-            this.i2 = i2;
-            this.i3 = i3;
-            this.i4 = i4;
-            this.i5 = i5;
-            this.i6 = i6;
-            this.i7 = i7;
-            this.i8 = i8;
-        }
-        
+        /// <summary>
+        /// Gets an awaiter used to await the requested scope to be accessible
+        /// </summary>
+        /// <returns>An awaiter instance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BorrowAwaiter GetAwaiter()
         {

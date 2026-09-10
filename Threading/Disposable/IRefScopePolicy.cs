@@ -5,6 +5,9 @@ using System.Diagnostics.Contracts;
 
 namespace Soe.Threading
 {
+    /// <summary>
+    /// Manages a reference based value
+    /// </summary>
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
@@ -12,10 +15,18 @@ namespace Soe.Threading
     #endif
     interface IRefScopePolicy<T>
     {
+        /// <summary>
+        /// Acquires a certain state based on the provided parameter
+        /// </summary>
+        /// <param name="parameter">A reference value</param>
         void Acquire(ref T parameter);
         
         // ReSharper disable PureAttributeOnVoidMethod
         
+        /// <summary>
+        /// Releases the state of the provided parameter
+        /// </summary>
+        /// <param name="parameter">A reference value</param>
         [Pure]
         void Dispose(ref T parameter);
         

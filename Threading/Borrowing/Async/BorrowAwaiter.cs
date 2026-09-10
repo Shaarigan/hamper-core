@@ -5,33 +5,40 @@ using System.Runtime.CompilerServices;
 
 namespace Soe.Threading
 {
+    /// <summary>
+    /// An object responsible to manage the asynchronous borrowing operation
+    /// </summary>
+    [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
     internal
     #endif
-    readonly struct BorrowAwaiter : INotifyCompletion
+    readonly struct BorrowAwaiter(Task<IAccessHandle> task) : INotifyCompletion
     {
-        private readonly Task<IAccessHandle> task;
-
+        /// <summary>
+        /// Gets if the underlying task is completed
+        /// </summary>
         public bool IsCompleted
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return task.IsCompleted; }
         }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BorrowAwaiter(Task<IAccessHandle> task)
-        {
-            this.task = task;
-        }
 
+        /// <summary>
+        /// Appends an action to the completion state of the underlying operation
+        /// </summary>
+        /// <param name="continuation">A method delegate called when the operation finishes</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void OnCompleted(Action continuation)
         {
             task.GetAwaiter().OnCompleted(continuation);
         }
 
+        /// <summary>
+        /// Gets the access scope managed by the corresponding <see cref="AccessManager"/>
+        /// </summary>
+        /// <returns>A disposable scope used in a using-block</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ScopedDisposable<IAccessHandle, AccessManager.ManagedAccessPolicy> GetResult()
         {

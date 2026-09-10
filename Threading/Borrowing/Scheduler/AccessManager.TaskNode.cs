@@ -14,6 +14,9 @@ namespace Soe.Threading
     #endif
     static partial class AccessManager
     {
+        /// <summary>
+        /// Provides different states of a <see cref="TaskNode"/> instance
+        /// </summary>
         enum TaskNodeState : int
         {
             Created = 0,
@@ -21,16 +24,25 @@ namespace Soe.Threading
             Running = 2,
             Completed = 3
         }
-        
-        abstract class TaskNode : IAccessHandle
+
+        /// <summary>
+        /// Represents a single task in a designated access graph
+        /// </summary>
+        class TaskNode : IAccessHandle
         {
             SmallArray<TaskNode?, SmallArray4<TaskNode?>> array;
             ConcurrentBuffer<TaskNode> children;
+
+            private FixedArray<object?, FixedArray8<object?>> instances;
+            private ReleaseDependenciesDelegate? releaseDependencies;
+            private GetOrderDelegate? getOrder;
             
-            TaskCompletionSource<IAccessHandle> signal;
+            TaskCompletionSource<IAccessHandle>? signal;
 
             private int state;
-
+            /// <summary>
+            /// Gets the current state of this task 
+            /// </summary>
             public TaskNodeState State
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -38,43 +50,83 @@ namespace Soe.Threading
             }
 
             private int dependencyCount;
-
+            /// <summary>
+            /// Gets the amount of tasks this one is currently waiting for
+            /// </summary>
             public int DependencyCount
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get { return Volatile.Read(ref dependencyCount); }
             }
 
+            /// <summary>
+            /// Initializes this instance to its default state
+            /// </summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            protected TaskNode()
+            public TaskNode()
             {
                 this.array = default;
                 this.children = default;
-                this.signal = new TaskCompletionSource<IAccessHandle>();
+                this.instances = default;
             }
 
+            // ReSharper disable ParameterHidesMember
+            
+            /// <summary>
+            /// Prepares this task to be appended into an access graph
+            /// </summary>
+            /// <param name="getOrder">A method to determine the order of a certain access policy, related
+            /// to the underlying access pattern</param>
+            /// <param name="releaseDependencies">A method to release dependencies of this task, related
+            /// to the underlying access pattern</param>
+            /// <returns>A memory object to set the object instances this task accesses</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Span<object?> Initialize(GetOrderDelegate getOrder, ReleaseDependenciesDelegate releaseDependencies)
+            {
+                this.state = (int)TaskNodeState.Created;
+                this.signal = new TaskCompletionSource<IAccessHandle>();
+                this.getOrder = getOrder;
+                this.releaseDependencies = releaseDependencies;
+
+                return instances.AsSpan();
+            }
+            
+            // ReSharper restore ParameterHidesMember
+            
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static implicit operator Task<IAccessHandle>(TaskNode node)
             {
-                return node.signal.Task;
+                return node.signal!.Task;
             }
-
+            
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void AddParent()
+            void AddParent()
             {
                 Interlocked.Increment(ref dependencyCount);
             }
 
+            /// <summary>
+            /// Appends the provided <see cref="TaskNode"/> to this tasks children and increases its dependency count
+            /// </summary>
+            /// <param name="child">A task instance to append</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void AppendChild(TaskNode child)
             {
                 children.Enqueue(ref array, child);
                 child.AddParent();
             }
-
-            public virtual int Clear<Accessor>(ref Accessor dispatchableNodes)
+            
+            /// <summary>
+            /// Finishes this tasks execution. Decreases the dependency counter for all children currently attached and
+            /// releases any used resource
+            /// </summary>
+            /// <param name="dispatchableNodes">An array to be filled with tasks ready to run next</param>
+            /// <returns>The amount of tasks added to the provided array</returns>
+            public int Finish<Accessor>(ref Accessor dispatchableNodes)
                 where Accessor : IArrayAccessor<TaskNode>
             {
+                releaseDependencies!(instances.AsSpan(), this);
+                
                 Volatile.Write(ref state, (int)TaskNodeState.Completed);
                 using(ScopedDisposable.Acquire<ConcurrentBuffer<TaskNode>, ConcurrentBuffer<TaskNode>.ExclusiveOperation>(ref children))
                 {
@@ -99,19 +151,44 @@ namespace Soe.Threading
                         }
                     }
                     children.Reset();
+                    instances.Clear();
+                    array.Clear();
+                    array.Resize(0);
+                    
                     return nodeCount;
                 }
             }
 
-            public abstract int GetOrder<T>()
-                where T : class;
+            /// <summary>
+            /// Gets a number related to the current access order of the provided object
+            /// </summary>
+            /// <typeparam name="T">An object this task is handling access to</typeparam>
+            /// <returns>The corresponding order ID</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int GetOrder<T>()
+                where T : class
+            {
+                return getOrder!(typeof(T));
+            }
+            
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public AccessType GetAccess<T>()
+                where T : class
+            {
+                return (AccessType)GetOrder<T>();
+            }
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool RemoveParent()
+            bool RemoveParent()
             {
                 return (Interlocked.Decrement(ref dependencyCount) == 0);
             }
             
+            /// <summary>
+            /// Signals this task to be fully initialized. All dependencies have been attached and the task is
+            /// ready to act as parent for other tasks
+            /// </summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void SetInitialized()
             {
@@ -121,505 +198,16 @@ namespace Soe.Threading
                 }
             }
 
+            /// <summary>
+            /// Signals that the underlying <see cref="System.Threading.Tasks.Task"/> can enter the requested scope
+            /// </summary>
             public void SignalNode()
             {
-                if (signal.TrySetResult(this))
+                if (signal!.TrySetResult(this))
                 {
                     Volatile.Write(ref state, (int)TaskNodeState.Running);
                 }
                 else Debugger.Break();
-            }
-        }
-
-        class TaskNode<T, Policy> : TaskNode
-            where T : class
-            where Policy : struct, IAccessPolicy
-        {
-            private readonly T instance;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public TaskNode(T instance)
-            {
-                this.instance = instance;
-            }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int Clear<Accessor>(ref Accessor dispatchableNodes)
-            {
-                Dependency<T>.Remove(instance, this);
-                return base.Clear(ref dispatchableNodes);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int GetOrder<TOther>()
-            {
-                if (typeof(TOther) == typeof(T))
-                {
-                    return default(Policy).Order;
-                }
-                else throw new ArgumentException(nameof(TOther));
-            }
-        }
-        
-        class TaskNode<T1, Policy1, T2, Policy2> : TaskNode
-            where T1 : class
-            where T2 : class
-            where Policy1 : struct, IAccessPolicy
-            where Policy2 : struct, IAccessPolicy
-        {
-            private readonly T1 i1;
-            private readonly T2 i2;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public TaskNode(T1 i1, T2 i2)
-            {
-                this.i1 = i1;
-                this.i2 = i2;
-            }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int Clear<Accessor>(ref Accessor dispatchableNodes)
-            {
-                Dependency<T1>.Remove(i1, this);
-                Dependency<T2>.Remove(i2, this);
-                return base.Clear(ref dispatchableNodes);
-            }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int GetOrder<T>()
-            {
-                if (typeof(T) == typeof(T1))
-                {
-                    return default(Policy1).Order;
-                }
-                else if (typeof(T) == typeof(T2))
-                {
-                    return default(Policy2).Order;
-                }
-                else throw new ArgumentException(nameof(T));
-            }
-        }
-        
-        class TaskNode<T1, Policy1, T2, Policy2, T3, Policy3> : TaskNode
-            where T1 : class
-            where T2 : class
-            where T3 : class
-            where Policy1 : struct, IAccessPolicy
-            where Policy2 : struct, IAccessPolicy
-            where Policy3 : struct, IAccessPolicy
-        {
-            private readonly T1 i1;
-            private readonly T2 i2;
-            private readonly T3 i3;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public TaskNode(T1 i1, T2 i2, T3 i3)
-            {
-                this.i1 = i1;
-                this.i2 = i2;
-                this.i3 = i3;
-            }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int Clear<Accessor>(ref Accessor dispatchableNodes)
-            {
-                Dependency<T1>.Remove(i1, this);
-                Dependency<T2>.Remove(i2, this);
-                Dependency<T3>.Remove(i3, this);
-                return base.Clear(ref dispatchableNodes);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int GetOrder<T>()
-            {
-                if (typeof(T) == typeof(T1))
-                {
-                    return default(Policy1).Order;
-                }
-                else if (typeof(T) == typeof(T2))
-                {
-                    return default(Policy2).Order;
-                }
-                else if (typeof(T) == typeof(T3))
-                {
-                    return default(Policy3).Order;
-                }
-                else throw new ArgumentException(nameof(T));
-            }
-        }
-        
-        class TaskNode<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4> : TaskNode
-            where T1 : class
-            where T2 : class
-            where T3 : class
-            where T4 : class
-            where Policy1 : struct, IAccessPolicy
-            where Policy2 : struct, IAccessPolicy
-            where Policy3 : struct, IAccessPolicy
-            where Policy4 : struct, IAccessPolicy
-        {
-            private readonly T1 i1;
-            private readonly T2 i2;
-            private readonly T3 i3;
-            private readonly T4 i4;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public TaskNode(T1 i1, T2 i2, T3 i3,  T4 i4)
-            {
-                this.i1 = i1;
-                this.i2 = i2;
-                this.i3 = i3;
-                this.i4 = i4;
-            }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int Clear<Accessor>(ref Accessor dispatchableNodes)
-            {
-                Dependency<T1>.Remove(i1, this);
-                Dependency<T2>.Remove(i2, this);
-                Dependency<T3>.Remove(i3, this);
-                Dependency<T4>.Remove(i4, this);
-                return base.Clear(ref dispatchableNodes);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int GetOrder<T>()
-            {
-                if (typeof(T) == typeof(T1))
-                {
-                    return default(Policy1).Order;
-                }
-                else if (typeof(T) == typeof(T2))
-                {
-                    return default(Policy2).Order;
-                }
-                else if (typeof(T) == typeof(T3))
-                {
-                    return default(Policy3).Order;
-                }
-                else if (typeof(T) == typeof(T4))
-                {
-                    return default(Policy4).Order;
-                }
-                else throw new ArgumentException(nameof(T));
-            }
-        }
-        
-        class TaskNode<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5> : TaskNode
-            where T1 : class
-            where T2 : class
-            where T3 : class
-            where T4 : class
-            where T5 : class
-            where Policy1 : struct, IAccessPolicy
-            where Policy2 : struct, IAccessPolicy
-            where Policy3 : struct, IAccessPolicy
-            where Policy4 : struct, IAccessPolicy
-            where Policy5 : struct, IAccessPolicy
-        {
-            private readonly T1 i1;
-            private readonly T2 i2;
-            private readonly T3 i3;
-            private readonly T4 i4;
-            private readonly T5 i5;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public TaskNode(T1 i1, T2 i2, T3 i3,  T4 i4, T5 i5)
-            {
-                this.i1 = i1;
-                this.i2 = i2;
-                this.i3 = i3;
-                this.i4 = i4;
-                this.i5 = i5;
-            }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int Clear<Accessor>(ref Accessor dispatchableNodes)
-            {
-                Dependency<T1>.Remove(i1, this);
-                Dependency<T2>.Remove(i2, this);
-                Dependency<T3>.Remove(i3, this);
-                Dependency<T4>.Remove(i4, this);
-                Dependency<T5>.Remove(i5, this);
-                return base.Clear(ref dispatchableNodes);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int GetOrder<T>()
-            {
-                if (typeof(T) == typeof(T1))
-                {
-                    return default(Policy1).Order;
-                }
-                else if (typeof(T) == typeof(T2))
-                {
-                    return default(Policy2).Order;
-                }
-                else if (typeof(T) == typeof(T3))
-                {
-                    return default(Policy3).Order;
-                }
-                else if (typeof(T) == typeof(T4))
-                {
-                    return default(Policy4).Order;
-                }
-                else if (typeof(T) == typeof(T5))
-                {
-                    return default(Policy5).Order;
-                }
-                else throw new ArgumentException(nameof(T));
-            }
-        }
-        
-        class TaskNode<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6> : TaskNode
-            where T1 : class
-            where T2 : class
-            where T3 : class
-            where T4 : class
-            where T5 : class
-            where T6 : class
-            where Policy1 : struct, IAccessPolicy
-            where Policy2 : struct, IAccessPolicy
-            where Policy3 : struct, IAccessPolicy
-            where Policy4 : struct, IAccessPolicy
-            where Policy5 : struct, IAccessPolicy
-            where Policy6 : struct, IAccessPolicy
-        {
-            private readonly T1 i1;
-            private readonly T2 i2;
-            private readonly T3 i3;
-            private readonly T4 i4;
-            private readonly T5 i5;
-            private readonly T6 i6;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public TaskNode(T1 i1, T2 i2, T3 i3,  T4 i4, T5 i5, T6 i6)
-            {
-                this.i1 = i1;
-                this.i2 = i2;
-                this.i3 = i3;
-                this.i4 = i4;
-                this.i5 = i5;
-                this.i6 = i6;
-            }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int Clear<Accessor>(ref Accessor dispatchableNodes)
-            {
-                Dependency<T1>.Remove(i1, this);
-                Dependency<T2>.Remove(i2, this);
-                Dependency<T3>.Remove(i3, this);
-                Dependency<T4>.Remove(i4, this);
-                Dependency<T5>.Remove(i5, this);
-                Dependency<T6>.Remove(i6, this);
-                return base.Clear(ref dispatchableNodes);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int GetOrder<T>()
-            {
-                if (typeof(T) == typeof(T1))
-                {
-                    return default(Policy1).Order;
-                }
-                else if (typeof(T) == typeof(T2))
-                {
-                    return default(Policy2).Order;
-                }
-                else if (typeof(T) == typeof(T3))
-                {
-                    return default(Policy3).Order;
-                }
-                else if (typeof(T) == typeof(T4))
-                {
-                    return default(Policy4).Order;
-                }
-                else if (typeof(T) == typeof(T5))
-                {
-                    return default(Policy5).Order;
-                }
-                else if (typeof(T) == typeof(T6))
-                {
-                    return default(Policy6).Order;
-                }
-                else throw new ArgumentException(nameof(T));
-            }
-        }
-        
-        class TaskNode<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6, T7, Policy7> : TaskNode
-            where T1 : class
-            where T2 : class
-            where T3 : class
-            where T4 : class
-            where T5 : class
-            where T6 : class
-            where T7 : class
-            where Policy1 : struct, IAccessPolicy
-            where Policy2 : struct, IAccessPolicy
-            where Policy3 : struct, IAccessPolicy
-            where Policy4 : struct, IAccessPolicy
-            where Policy5 : struct, IAccessPolicy
-            where Policy6 : struct, IAccessPolicy
-            where Policy7 : struct, IAccessPolicy
-        {
-            private readonly T1 i1;
-            private readonly T2 i2;
-            private readonly T3 i3;
-            private readonly T4 i4;
-            private readonly T5 i5;
-            private readonly T6 i6;
-            private readonly T7 i7;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public TaskNode(T1 i1, T2 i2, T3 i3,  T4 i4, T5 i5, T6 i6, T7 i7)
-            {
-                this.i1 = i1;
-                this.i2 = i2;
-                this.i3 = i3;
-                this.i4 = i4;
-                this.i5 = i5;
-                this.i6 = i6;
-                this.i7 = i7;
-            }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int Clear<Accessor>(ref Accessor dispatchableNodes)
-            {
-                Dependency<T1>.Remove(i1, this);
-                Dependency<T2>.Remove(i2, this);
-                Dependency<T3>.Remove(i3, this);
-                Dependency<T4>.Remove(i4, this);
-                Dependency<T5>.Remove(i5, this);
-                Dependency<T6>.Remove(i6, this);
-                Dependency<T7>.Remove(i7, this);
-                return base.Clear(ref dispatchableNodes);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int GetOrder<T>()
-            {
-                if (typeof(T) == typeof(T1))
-                {
-                    return default(Policy1).Order;
-                }
-                else if (typeof(T) == typeof(T2))
-                {
-                    return default(Policy2).Order;
-                }
-                else if (typeof(T) == typeof(T3))
-                {
-                    return default(Policy3).Order;
-                }
-                else if (typeof(T) == typeof(T4))
-                {
-                    return default(Policy4).Order;
-                }
-                else if (typeof(T) == typeof(T5))
-                {
-                    return default(Policy5).Order;
-                }
-                else if (typeof(T) == typeof(T6))
-                {
-                    return default(Policy6).Order;
-                }
-                else if (typeof(T) == typeof(T7))
-                {
-                    return default(Policy7).Order;
-                }
-                else throw new ArgumentException(nameof(T));
-            }
-        }
-        
-        class TaskNode<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6, T7, Policy7, T8, Policy8> : TaskNode
-            where T1 : class
-            where T2 : class
-            where T3 : class
-            where T4 : class
-            where T5 : class
-            where T6 : class
-            where T7 : class
-            where T8 : class
-            where Policy1 : struct, IAccessPolicy
-            where Policy2 : struct, IAccessPolicy
-            where Policy3 : struct, IAccessPolicy
-            where Policy4 : struct, IAccessPolicy
-            where Policy5 : struct, IAccessPolicy
-            where Policy6 : struct, IAccessPolicy
-            where Policy7 : struct, IAccessPolicy
-            where Policy8 : struct, IAccessPolicy 
-        {
-            private readonly T1 i1;
-            private readonly T2 i2;
-            private readonly T3 i3;
-            private readonly T4 i4;
-            private readonly T5 i5;
-            private readonly T6 i6;
-            private readonly T7 i7;
-            private readonly T8 i8;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public TaskNode(T1 i1, T2 i2, T3 i3,  T4 i4, T5 i5, T6 i6, T7 i7, T8 i8)
-            {
-                this.i1 = i1;
-                this.i2 = i2;
-                this.i3 = i3;
-                this.i4 = i4;
-                this.i5 = i5;
-                this.i6 = i6;
-                this.i7 = i7;
-                this.i8 = i8;
-            }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int Clear<Accessor>(ref Accessor dispatchableNodes)
-            {
-                Dependency<T1>.Remove(i1, this);
-                Dependency<T2>.Remove(i2, this);
-                Dependency<T3>.Remove(i3, this);
-                Dependency<T4>.Remove(i4, this);
-                Dependency<T5>.Remove(i5, this);
-                Dependency<T6>.Remove(i6, this);
-                Dependency<T7>.Remove(i7, this);
-                Dependency<T8>.Remove(i8, this);
-                return base.Clear(ref dispatchableNodes);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int GetOrder<T>()
-            {
-                if (typeof(T) == typeof(T1))
-                {
-                    return default(Policy1).Order;
-                }
-                else if (typeof(T) == typeof(T2))
-                {
-                    return default(Policy2).Order;
-                }
-                else if (typeof(T) == typeof(T3))
-                {
-                    return default(Policy3).Order;
-                }
-                else if (typeof(T) == typeof(T4))
-                {
-                    return default(Policy4).Order;
-                }
-                else if (typeof(T) == typeof(T5))
-                {
-                    return default(Policy5).Order;
-                }
-                else if (typeof(T) == typeof(T6))
-                {
-                    return default(Policy6).Order;
-                }
-                else if (typeof(T) == typeof(T7))
-                {
-                    return default(Policy7).Order;
-                }
-                else if (typeof(T) == typeof(T8))
-                {
-                    return default(Policy8).Order;
-                }
-                else throw new ArgumentException(nameof(T));
             }
         }
     }

@@ -5,6 +5,9 @@ using System.Diagnostics.Contracts;
 
 namespace Soe.Threading
 {
+    /// <summary>
+    /// Manages an instance type
+    /// </summary>
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
@@ -14,6 +17,17 @@ namespace Soe.Threading
     {
         // ReSharper disable PureAttributeOnVoidMethod
         
+        /// <summary>
+        /// Performs an initialization action based on the provided parameter
+        /// </summary>
+        /// <param name="parameter">A value</param>
+        [Pure]
+        void Initialize(in T parameter);
+        
+        /// <summary>
+        /// Performs a deinitialization action based on the provided parameter
+        /// </summary>
+        /// <param name="parameter">A value</param>
         [Pure]
         void Dispose(in T parameter);
         

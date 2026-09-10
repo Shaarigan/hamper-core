@@ -3,6 +3,9 @@
 
 namespace Soe.Threading
 {
+    /// <summary>
+    /// An abstract access handle managed by the corresponding <see cref="AccessManager"/>
+    /// </summary>
     #if EXPORT_HAMPER_CORE_THREADING
     public
     #else
@@ -10,6 +13,12 @@ namespace Soe.Threading
     #endif
     interface IAccessHandle
     {
-
+        /// <summary>
+        /// Gets the permission related to the current access of the provided object
+        /// </summary>
+        /// <typeparam name="T">An object this handle is managing</typeparam>
+        /// <returns>The corresponding permission</returns>
+        public AccessType GetAccess<T>()
+            where T : class;
     }
 }
