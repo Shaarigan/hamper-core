@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Soe.Threading;
 
 namespace Soe.Composable
 {
@@ -19,15 +20,12 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    partial class PageAllocator
+    partial class PageAllocator : IMemoryAllocator
     {
-        public const int PageSize = 4096;
-        public const int BlockSize = PageSize >> 6;
-        public const int BlockShift = 3;
-        public const int BlockMask = (BlockSize >> BlockShift) - 1;
         public const int MaxPageCount = UInt16.MaxValue;
         
         private readonly MemoryMappedFile pages;
+        private UInt32 lockVariable;
         private int firstFreeIndex;
         private ChunkList chunks;
         
@@ -37,185 +35,167 @@ namespace Soe.Composable
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public PageAllocator()
         {
-            pages = MemoryMappedFile.CreateNew(null, PageSize * MaxPageCount, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.DelayAllocatePages, HandleInheritability.None);
+            pages = MemoryMappedFile.CreateNew(null, MemoryAllocator.PageSize * MaxPageCount, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.DelayAllocatePages, HandleInheritability.None);
             firstFreeIndex = 0;
             chunks = default;
         }
         
-        /// <summary>
-        /// Accesses the memory page at the given index
-        /// </summary>
-        /// <param name="handle">A handle pointing to a block in a memory page</param>
-        /// <param name="index">The index of the memory region relative to <paramref name="handle"/></param>
-        /// <param name="entity">The entity to write into memory</param>
-        /// <exception cref="InsufficientMemoryException">The memory page was discarded or otherwise freed</exception>
-        /// <exception cref="IndexOutOfRangeException">The handle points to a location not in bounds of the page</exception>
+        /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Access(in MemoryHandle handle, int index, in EntityId entity)
         {
             index *= sizeof(UInt64);
-            Span<Chunk> list = chunks.AsSpan();
-            if (handle.PageIndex < list.Length && handle.BlockIndex + handle.BlockSize <= PageSize)
+            using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))
             {
-                if(list[handle.PageIndex].Handler is MemoryMappedViewAccessor accessor)
+                Span<Chunk> list = chunks.AsSpan();
+                if (handle.PageIndex < list.Length && handle.BlockIndex + handle.BlockSize <= MemoryAllocator.PageSize)
                 {
-                    accessor.Write(handle.BlockIndex + index, entity);
-                    
-                    #if DEBUG
-                    if(accessor.ReadUInt64(handle.BlockIndex + index) != entity)
-                        throw new Exception();
-                    #endif
+                    if (list[handle.PageIndex].Handler is MemoryMappedViewAccessor accessor)
+                    {
+                        accessor.Write(handle.BlockIndex + index, entity);
+                    }
+                    else throw new InsufficientMemoryException();
                 }
-                else throw new InsufficientMemoryException();
+                else throw new IndexOutOfRangeException();
             }
-            else throw new IndexOutOfRangeException();
         }
-        /// <summary>
-        /// Accesses the memory page at the given index
-        /// </summary>
-        /// <param name="handle">A handle pointing to a block in a memory page</param>
-        /// <param name="index">The index of the memory region relative to <paramref name="handle"/></param>
-        /// <returns>The entity stored a the given index</returns>
-        /// <exception cref="InsufficientMemoryException">The memory page was discarded or otherwise freed</exception>
-        /// <exception cref="IndexOutOfRangeException">The handle points to a location not in bounds of the page</exception>
+        /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public EntityId Access(in MemoryHandle handle, int index)
         {
             index *= sizeof(UInt64);
-            Span<Chunk> list = chunks.AsSpan();
-            if (handle.PageIndex < list.Length && handle.BlockIndex + handle.BlockSize <= PageSize)
+            using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))
             {
-                if(list[handle.PageIndex].Handler is MemoryMappedViewAccessor accessor)
+                Span<Chunk> list = chunks.AsSpan();
+                if (handle.PageIndex < list.Length && handle.BlockIndex + handle.BlockSize <= MemoryAllocator.PageSize)
                 {
-                    return accessor.ReadUInt64(handle.BlockIndex + index);
+                    if (list[handle.PageIndex].Handler is MemoryMappedViewAccessor accessor)
+                    {
+                        return accessor.ReadUInt64(handle.BlockIndex + index);
+                    }
+                    else throw new InsufficientMemoryException();
                 }
-                else throw new InsufficientMemoryException();
+                else throw new IndexOutOfRangeException();
             }
-            else throw new IndexOutOfRangeException();
         }
         
-        /// <summary>
-        /// Acquires a new block of the provided size
-        /// </summary>
-        /// <param name="size">The minimum size of the block</param>
-        /// <returns>A handle pointing to the block acquired</returns>
-        /// <exception cref="OutOfMemoryException"></exception>
-        /// <remarks>Blocks are always allocated as multiples of <see cref="BlockSize"/></remarks>
+        /// <inheritdoc/>
+        /// <remarks>Blocks are always allocated as multiples of <see cref="MemoryAllocator.BlockSize"/></remarks>
         public MemoryHandle Allocate(int size)
         {
             // Map the size to power of two value
-            if (size < BlockSize)
+            if (size < MemoryAllocator.BlockSize)
             {
-                size = BlockSize;
+                size = MemoryAllocator.BlockSize;
             }
             size = size.NextPowerOfTwo();
             int blockCount = size >> 6;
             Span<Chunk> list;
             
         TryInsert:
+            using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))
             {
                 list = chunks.AsSpan();
-                for (int i = firstFreeIndex; i < list.Length; i++)
+                for (int i = Volatile.Read(ref firstFreeIndex); i < list.Length; i++)
                 {
                     ref Chunk chunk = ref list[i];
                     if (chunk.IsEmpty)
                     {
                         // Allocate a new page
-                        chunk.Handler = pages.CreateViewAccessor(i * PageSize, PageSize);
+                        object? result = Interlocked.CompareExchange(ref chunk.Handler, pages.CreateViewAccessor(i * MemoryAllocator.PageSize, MemoryAllocator.PageSize), null);
+                        if (result is MemoryMappedViewAccessor accessor)
+                        {
+                            accessor.Dispose();
+                        }
                     }
+                Retry:
+                    UInt64 freeList = Volatile.Read(ref chunk.FreeList);
+                    
                     // Search for the next free block in this page
-                    for (int bit = GetFirstFreeIndex(chunk.FreeList); bit < 64; bit++)
+                    for (int bit = GetFirstFreeIndex(freeList); bit < 64; bit++)
                     {
-                        int count = BitOperations.TrailingZeroCount(chunk.FreeList >> bit) - bit;
+                        int count = BitOperations.TrailingZeroCount(freeList >> bit) - bit;
                         if (count >= blockCount)
                         {
-                            chunk.FreeList |= ((1ul << blockCount) - 1) << bit;
-                            if (firstFreeIndex == i && chunk.FreeList == UInt64.MaxValue)
+                            UInt64 newFreeList = freeList | ((1ul << blockCount) - 1) << bit;
+                            if (Interlocked.CompareExchange(ref chunk.FreeList, newFreeList, freeList) != freeList)
+                            {
+                                goto Retry;
+                            }
+
+                            int freeIndex = Volatile.Read(ref firstFreeIndex);
+                            if (freeIndex == i && newFreeList == UInt64.MaxValue)
                             {
                                 // Increase the hint for the allocator where to look for free blocks
-                                firstFreeIndex++;
+                                Interlocked.CompareExchange(ref firstFreeIndex, freeIndex + 1, freeIndex);
                             }
-                            return new MemoryHandle((UInt16)size, (UInt32)i, (UInt16)(bit * BlockSize));
+                            return new MemoryHandle((UInt16)size, (UInt32)i, (UInt16)(bit * MemoryAllocator.BlockSize));
                         }
                     }
                 }
             }
-            if (list.Length * 2 <= MaxPageCount)
+            using (ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.ExclusiveOperation>(ref lockVariable))
             {
-                // There are more pages reserved, grow and retry
-                chunks.Resize(list.Length * 2);
-                goto TryInsert;
+                if (list.Length * 2 <= MaxPageCount)
+                {
+                    // There are more pages reserved, grow and retry
+                    chunks.Resize(list.Length * 2);
+                    goto TryInsert;
+                }
+                else throw new OutOfMemoryException();
             }
-            else throw new OutOfMemoryException();
         }
         
-        /// <summary>
-        /// Returns the handle to a block in a memory page
-        /// </summary>
-        /// <param name="handle">A handle pointing to a block in a memory page</param>
-        /// <exception cref="IndexOutOfRangeException">The handle points to a location not in bounds of the page</exception>
+        /// <inheritdoc/>
         public void Free(in MemoryHandle handle)
         {
-            Span<Chunk> list = chunks.AsSpan();
-            if (handle.PageIndex < list.Length && (handle.BlockIndex * BlockSize) + handle.BlockSize <= PageSize)
+            using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))
             {
-                ref Chunk chunk = ref list[handle.PageIndex];
-                chunk.FreeList &= ~(((1ul << (handle.BlockSize >> 6)) - 1) << handle.BlockIndex);
+                Span<Chunk> list = chunks.AsSpan();
+                if (handle.PageIndex < list.Length && (handle.BlockIndex * MemoryAllocator.BlockSize) + handle.BlockSize <= MemoryAllocator.PageSize)
+                {
+                    ref Chunk chunk = ref list[handle.PageIndex];
 
-                // ReSharper disable MergeIntoPattern
-                
-                if (chunk.FreeList == 0 && chunk.Handler is MemoryMappedViewAccessor accessor)
-                {
-                    // The page is unused, discard it
-                    chunk.Handler = null;
-                    accessor.Dispose();
+                Retry:
+                    UInt64 freeList = Volatile.Read(ref chunk.FreeList);
+                    if (Interlocked.CompareExchange(ref chunk.FreeList, (freeList & ~(((1ul << (handle.BlockSize >> 6)) - 1) << handle.BlockIndex)), freeList) == freeList)
+                    {
+                        int freeIndex = Volatile.Read(ref firstFreeIndex);
+                        if (handle.PageIndex < freeIndex)
+                        {
+                            // Set the hint to where to look for free chunks to this page if possible
+                            Interlocked.CompareExchange(ref firstFreeIndex, handle.PageIndex, freeIndex);
+                        }
+                    }
+                    else goto Retry;
                 }
-                else if (handle.PageIndex < firstFreeIndex)
-                {
-                    // Set the hint to where to look for free chunks to this page if possible
-                    firstFreeIndex = handle.PageIndex;
-                }
-                
-                // ReSharper restore MergeIntoPattern
+                else throw new IndexOutOfRangeException();
             }
-            else throw new IndexOutOfRangeException();
         }
         
-        /// <summary>
-        /// Initializes the memory page from the given index with default values
-        /// </summary>
-        /// <param name="handle">A handle pointing to a block in a memory page</param>
-        /// <param name="index">The index of the memory region relative to <paramref name="handle"/></param>
-        /// <param name="entity">The default values to write into memory</param>
-        /// <exception cref="InsufficientMemoryException">The memory page was discarded or otherwise freed</exception>
-        /// <exception cref="IndexOutOfRangeException">The handle points to a location not in bounds of the page</exception>
+        /// <inheritdoc/>
         public void InitializeBlock(in MemoryHandle handle, int index, in EntityId entity)
         {
-            int count = handle.BlockSize >> BlockShift;
+            int count = handle.BlockSize >> MemoryAllocator.BlockShift;
             EntityId[] ids = ArrayPool<EntityId>.Shared.Rent(count);
             try
             {
                 ids.AsSpan().Slice(0, count)
                     .Fill(entity);
 
-                Span<Chunk> list = chunks.AsSpan();
-                if (handle.PageIndex < list.Length && handle.BlockIndex + handle.BlockSize <= PageSize)
+                using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))
                 {
-                    if (list[handle.PageIndex].Handler is MemoryMappedViewAccessor accessor)
+                    Span<Chunk> list = chunks.AsSpan();
+                    if (handle.PageIndex < list.Length && handle.BlockIndex + handle.BlockSize <= MemoryAllocator.PageSize)
                     {
-                        accessor.WriteArray(handle.BlockIndex + index, ids, 0, count);
-                        
-                        #if DEBUG
-                        for (int i = handle.BlockIndex + index; i < count; i++)
+                        if (list[handle.PageIndex].Handler is MemoryMappedViewAccessor accessor)
                         {
-                            if (accessor.ReadUInt64(i * sizeof(UInt64)) != entity)
-                                throw new Exception();
+                            accessor.WriteArray(handle.BlockIndex + index, ids, 0, count);
                         }
-                        #endif
+                        else throw new InsufficientMemoryException();
                     }
-                    else throw new InsufficientMemoryException();
+                    else throw new IndexOutOfRangeException();
                 }
-                else throw new IndexOutOfRangeException();
             }
             finally
             {

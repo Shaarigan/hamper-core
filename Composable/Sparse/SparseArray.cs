@@ -1,22 +1,19 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System;
 using System.Runtime.CompilerServices;
-using Soe.Threading;
 
 namespace Soe.Composable
 {
     /// <summary>
-    /// Stores a set of linear <seealso cref="EntityId"/> in linear memory
+    /// Stores a set of linear <see cref="EntityId"/> in linear memory
     /// </summary>
     #if EXPORT_HAMPER_CORE_COMPOSABLE
     public
     #else
     internal
     #endif
-    abstract partial class SparseArray<T> : Ownable<T>
-        where T : SparseArray<T>
+    abstract partial class SparseArray
     {
         private MemoryHandle[]? data;
         /// <summary>

@@ -154,6 +154,19 @@ namespace Soe.Threading
         }
 
         /// <summary>
+        /// Ends exclusiveness by shifting the signal bit to a shared operation or block
+        /// </summary>
+        /// <param name="lockVariable">A fixed 32-bit value to use as synchronization bits</param>
+        /// <param name="sharedBits">A bit-mask defining the shared operation bits. Default is 0x7FFFFFFF</param>
+        /// <param name="exclusiveBit">A bit-mask defining the exclusive operation bit. Default is 0x80000000</param>
+        /// <returns>True if the exclusive signal was successfully changed to a shared signal, false otherwise</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryShiftReleaseExclusiveOperation(ref UInt32 lockVariable, UInt32 sharedBits = SharedBits, UInt32 exclusiveBit = ExclusiveBit)
+        {
+            return (Interlocked.CompareExchange(ref lockVariable, (lockVariable & sharedBits) + 1, exclusiveBit) == exclusiveBit);
+        }
+        
+        /// <summary>
         /// Signals the end of an exclusive operation or block
         /// </summary>
         /// <param name="lockVariable">A fixed 32-bit value to use as synchronization bits</param>

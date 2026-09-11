@@ -1,14 +1,12 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System;
 using System.Runtime.CompilerServices;
-using Soe.Threading;
 
 namespace Soe.Composable
 {
     /// <summary>
-    /// Stores a set of linear <seealso cref="EntityId"/> via Robin Hood hash algorithm in order to achieve a more compact memory layout
+    /// Stores a set of linear <see cref="EntityId"/> via Robin Hood hash algorithm in order to achieve a more compact memory layout
     /// </summary>
     /// <remarks>Robin Hood hashing is an open addressing scheme that reduces variance in probe lengths by moving elements with
     /// shorter probe distances away to make room for elements that are farther from their ideal hash position</remarks>
@@ -17,8 +15,7 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    abstract partial class SparseMap<T> : Ownable<T>
-        where T : SparseMap<T>
+    abstract partial class SparseMap
     {
         /// <summary>
         /// The maximum amount of elements stored before the container resizes in order to ensure

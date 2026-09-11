@@ -1,9 +1,7 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System;
 using System.Runtime.CompilerServices;
-using Soe.Threading;
 
 namespace Soe.Composable
 {
@@ -12,7 +10,7 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    abstract partial class SparseMap<T>
+    abstract partial class SparseMap
     {
         /// <summary>
         /// Represents a container element of the <seealso cref="SparseMap{T}"/>

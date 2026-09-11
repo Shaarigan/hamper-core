@@ -53,13 +53,17 @@ namespace Soe.Threading
                     }
                     version = tasks.Version;
                 }
-                using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.ExclusiveOperation>(ref lockVariable))   
+                SynchronizationBarrier.BeginExclusiveOperation(ref lockVariable);
+                using(ScopedDisposable.Create<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))   
                 {  
                     ref TaskList taskList = ref tasks.Emplace(instance, hash, index, distance, version);
                     if(!taskList.IsValid)
                     {
                         taskList = new TaskList(hash, instance);
                     }
+
+                    // Downgrade exclusive access to shared access
+                    SynchronizationBarrier.TryShiftReleaseExclusiveOperation(ref lockVariable);
                     return taskList.Append<T, Policy>(node);
                 }
             }

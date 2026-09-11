@@ -1,9 +1,7 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Soe.Collections.Embedded;
 using Soe.Threading;
@@ -15,11 +13,9 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    class Entities : SparseArray<Entities>, IEnumerable<EntityId>, IOwnable<Entities>
+    class Entities : SparseArray, IEnumerable<EntityId>
     {
-        private const int SHARD = 0;
-
-        private readonly PageAllocator allocator;
+        private readonly Shard shard;
         private EntityId freeList;
         private int maxID;
 
@@ -28,19 +24,25 @@ namespace Soe.Composable
         public int Capacity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return Length * (PageAllocator.BlockSize >> PageAllocator.BlockShift); }
+            get { return Length * (MemoryAllocator.BlockSize >> MemoryAllocator.BlockShift); }
         }
 
         public int Count
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return entities.Count; }
+            get
+            {
+                // Requires at least immutable access when scheduled
+                AccessManager.ThrowOnLessAccessible<Entities>(AccessType.Immutable);
+                
+                return entities.Count;
+            }
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Entities(PageAllocator allocator)
+        public Entities(Shard shard)
         {
-            this.allocator = allocator;
+            this.shard = shard;
             this.freeList = EntityId.Invalid;
             this.maxID = 0;
             this.entities = default;
@@ -48,30 +50,30 @@ namespace Soe.Composable
 
         public EntityId Create()
         {
-            ThrowOnNotOwned();
+            // Requires mutable access when scheduled
+            AccessManager.ThrowOnAccessViolation<Entities>(AccessType.Mutable);
             
             Ref<MemoryHandle> handle;
             EntityId entity;
 
+            IMemoryAllocator allocator = shard;
             if (freeList == EntityId.Invalid)
             {
                 // Create new entity from current max entity ID
-                entity = new EntityId(maxID++, 0, SHARD, EntityFlags.None);
-                int slot = entity.Index >> PageAllocator.BlockShift;
+                entity = new EntityId(maxID++, 0, shard.Id, EntityFlags.None);
+                
+                int slot = entity.Index >> MemoryAllocator.BlockShift;
                 if (!Find(slot, out handle))
                 {
-                    // Protect structural change
-                    using(ScopedDisposable.Acquire(ref Handle, default(ExclusiveScope)))
+                    // Entity does not exist, add it to the sparse array
+                    ref MemoryHandle tmp = ref Emplace(slot, Version);
+                    if (!tmp.IsValid)
                     {
-                        // Entity does not exist, add it to the sparse array
-                        ref MemoryHandle tmp = ref Emplace(slot, Version);
-                        if (!tmp.IsValid)
-                        {
-                            // Block is uninitialized, we must initialize it first to prevent false positives
-                            tmp = allocator.Allocate(PageAllocator.BlockSize);
-                            allocator.InitializeBlock(tmp, 0, EntityId.Invalid);
-                            handle = new Ref<MemoryHandle>(ref tmp);
-                        }
+                        // Block is uninitialized, we must initialize it first to prevent false positives
+                        tmp = allocator.Allocate(MemoryAllocator.BlockSize);
+                        allocator.InitializeBlock(tmp, 0, EntityId.Invalid);
+                        
+                        handle = new Ref<MemoryHandle>(ref tmp);
                     }
                 }
             }
@@ -79,65 +81,54 @@ namespace Soe.Composable
             {
                 // Use recyclable entity
                 entity = new EntityId(freeList.Index, freeList.Version + 1, freeList.Shard, EntityFlags.None);
-                int slot = entity.Index >> PageAllocator.BlockShift;
+                int slot = entity.Index >> MemoryAllocator.BlockShift;
                 if (Find(slot, out handle))
                 {
                     // Swap the recyclable entity with whatever is stored at its slot in the sparse array
-                    freeList = allocator.Access(handle.Value, freeList.Index & PageAllocator.BlockMask);
+                    freeList = allocator.Access(handle.Value, freeList.Index & MemoryAllocator.BlockMask);
                 }
                 else throw new AccessViolationException();
             }
 
-            int index = entities.Count;
-
-            // Protect structural change
-            using(ScopedDisposable.Acquire(ref Handle, default(ExclusiveScope)))
-            {
-                entities.Add(entity);
-            }
+            int index = entities.Count; 
+            entities.Add(entity);
 
             // Write a modified version of entity to its slot in the sparse array so entity.Index -> dense index
-            allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, new EntityId(index, entity.Version, entity.Shard, entity.Flags));
+            allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, new EntityId(index, entity.Version, entity.Shard, entity.Flags));
             return entity;
         }
 
         public bool Dispose(EntityId entity)
         {
-            ThrowOnNotOwned();
+            // Requires mutable access when scheduled
+            AccessManager.ThrowOnAccessViolation<Entities>(AccessType.Mutable);
             
             if (Find(entity.Index, out Ref<MemoryHandle> handle))
             {
+                IMemoryAllocator allocator = shard;
+                
                 // Check if entity is alive
-                EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
+                EntityId entityPtr = allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask);
                 if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
                 {
-                    allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask, freeList);
+                    allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, freeList);
                     freeList = new EntityId(entity.Index, entity.Version, entity.Shard, EntityFlags.Reserved);
 
-                    // Protect structural change
-                    try
+                    if (entityPtr.Index < Count - 1)
                     {
-                        if (entityPtr.Index < Count - 1)
+                        // Swap entity data with last entity
+                        EntityId swap = entities[Count - 1];
+                        if (Find(swap.Index, out handle))
                         {
-                            // Swap entity data with last entity
-                            EntityId swap = entities[Count - 1];
-                            if (Find(swap.Index, out handle))
-                            {
-                                EntityId tmp = allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask);
-                                allocator.Access(handle.Value, swap.Index & PageAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.Shard, tmp.Flags));
+                            EntityId tmp = allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask);
+                            allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.Shard, tmp.Flags));
 
-                                Handle.GetExclusiveAccessUnsafe();
-                                Swap(entityPtr.Index, tmp.Index);
-                            }
-                            else throw new AccessViolationException();
+                            Swap(entityPtr.Index, tmp.Index);
                         }
-                        else Handle.GetExclusiveAccessUnsafe();
-                        entities.RemoveAt(Count - 1);
+                        else throw new AccessViolationException();
                     }
-                    finally
-                    {
-                        Handle.ReturnExclusiveAccessUnsafe();
-                    }
+
+                    entities.RemoveAt(Count - 1);
                     return true;
                 }
             }
@@ -149,57 +140,36 @@ namespace Soe.Composable
         {
             (entities[oldIndex], entities[newIndex]) = (entities[newIndex], entities[oldIndex]);
         }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool TryBorrow<Policy>(out ScopedReference<Entities, Policy> reference)
-        {
-            if (default(Policy).TryAcquire(ref Handle))
-            {
-                reference = new ScopedReference<Entities, Policy>(this, ref Handle);
-                return true;
-            }
-            else
-            {
-                reference = default;
-                return false;
-            }
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGet(EntityId entity, out EntityId result)
         {
-            if (TestAndSetSharedRegion())
+            // Requires at least immutable access when scheduled
+            AccessManager.ThrowOnLessAccessible<Entities>(AccessType.Immutable);
+            
+            if (Find(entity.Index, out Ref<MemoryHandle> handle))
             {
-                return TryGet<SharedScope>(entity, out result);
-            }
-            else return TryGet<EmptyScope<OwnershipHandle>>(entity, out result);
-        }
-        
-        bool TryGet<Policy>(EntityId entity, out EntityId result)
-            where Policy : struct, IScopePolicy<OwnershipHandle>
-        {
-            using(ScopedDisposable.Create(ref Handle, default(Policy)))
-            {
-                if (Find(entity.Index, out Ref<MemoryHandle> handle))
+                IMemoryAllocator allocator = shard;
+                
+                // Check if entity is alive
+                EntityId entityPtr = allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask);
+                if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
                 {
-                    // Check if entity is alive
-                    EntityId entityPtr = allocator.Access(handle.Value, entity.Index & PageAllocator.BlockMask);
-                    if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
-                    {
-                        result = entities[entityPtr.Index];
-                        return true;
-                    }
+                    result = entities[entityPtr.Index];
+                    return true;
                 }
-
-                result = EntityId.Invalid;
-                return false;
             }
+
+            result = EntityId.Invalid;
+            return false;
         }
 
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerator<EntityId> GetEnumerator()
         {
+            // Requires at least immutable access when scheduled
+            AccessManager.ThrowOnLessAccessible<Entities>(AccessType.Immutable);
+            
             return entities.GetEnumerator();
         }
         /// <inheritdoc/>

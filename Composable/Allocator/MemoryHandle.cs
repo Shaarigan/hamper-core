@@ -66,7 +66,7 @@ namespace Soe.Composable
             {
                 // ReSharper disable MergeIntoPattern
                 
-                return (blockSize >= PageAllocator.BlockSize && blockSize <= PageAllocator.PageSize);
+                return (blockSize >= MemoryAllocator.BlockSize && blockSize <= MemoryAllocator.PageSize);
                 
                 // ReSharper restore MergeIntoPattern
             }

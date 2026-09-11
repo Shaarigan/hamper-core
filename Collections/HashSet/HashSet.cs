@@ -1,19 +1,21 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Soe.Collections.Embedded;
 
 namespace Soe.Collections.HashSet
 {
+    /// <summary>
+    /// Stores a set of elements via Robin Hood hash algorithm
+    /// </summary>
+    /// <remarks>Robin Hood hashing is an open addressing scheme that reduces variance in probe lengths by moving elements with
+    /// shorter probe distances away to make room for elements that are farther from their ideal hash position</remarks>
     #if EXPORT_HAMPER_CORE_COLLECTIONS_HASHSET
     public
     #else
     internal
     #endif
-    static class HashSet
+    static partial class HashSet
     {
         /// <summary>
         /// The default amount of elements stored before the container resizes in order to ensure
@@ -22,13 +24,19 @@ namespace Soe.Collections.HashSet
         public const float DefaultLoadFactor = 0.86f;
     }
     
+    /// <summary>
+    /// Stores a set of <typeparamref name="T"/> via Robin Hood hash algorithm
+    /// </summary>
+    /// <param name="comparer">An <seealso cref="IEqualityComparer{T}"/> to handle element comparison</param>
+    /// <remarks>Robin Hood hashing is an open addressing scheme that reduces variance in probe lengths by moving elements with
+    /// shorter probe distances away to make room for elements that are farther from their ideal hash position</remarks>
     [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     #if EXPORT_HAMPER_CORE_COLLECTIONS_HASHSET
     public
     #else
     internal
     #endif
-        struct HashSet<T, Container>(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor)
+    partial struct HashSet<T, Container>(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor)
         where Container : struct, IHashContainer<T>
     {
         private int moduloMask = 0;
@@ -73,6 +81,9 @@ namespace Soe.Collections.HashSet
             get { return version; }
         }
 
+        /// <summary>
+        /// Clears the contents of this container to its default value
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
@@ -83,6 +94,15 @@ namespace Soe.Collections.HashSet
             count = 0;
         }
         
+        /// <summary>
+        /// Attempts to add an element to the container
+        /// </summary>
+        /// <param name="key">The element to add</param>
+        /// <param name="hash">The hash code of the element to add</param>
+        /// <param name="index">The start index to insert as (hash % Capacity)</param>
+        /// <param name="distance">The search distance</param>
+        /// <param name="currentVersion">The container Version as a reference parameter</param>
+        /// <returns>A reference to the added or existing element</returns>
         public ref Container Emplace(in T key, int hash, int index, int distance, int currentVersion)
         {
             if (version == currentVersion || !Find(key, hash, out index, out distance, out Ref<Container> result))
@@ -97,6 +117,17 @@ namespace Soe.Collections.HashSet
                 return ref items![Emplace(index, distance)];
             }
             else return ref result.Value;
+        }
+        /// <summary>
+        /// Attempts to add an element to the container
+        /// </summary>
+        /// <param name="key">The element to add</param>
+        /// <param name="hash">The hash code of the element to add</param>
+        /// <returns>A reference to the added or existing element</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ref Container Emplace(in T key, int hash)
+        {
+            return ref Emplace(key, hash, 0, 0, version + 1);
         }
         int Emplace(int index, int distance)
         {
@@ -171,6 +202,15 @@ namespace Soe.Collections.HashSet
             }
         }
 
+        /// <summary>
+        /// Determines whether the container contains a specific element
+        /// </summary>
+        /// <param name="key">The element to find</param>
+        /// <param name="hash">The hash code of the element to find</param>
+        /// <param name="index">The last index tested</param>
+        /// <param name="distance">The current search distance</param>
+        /// <param name="result">If successful, a reference to the element in this container</param>
+        /// <returns>True if this container contains an element with the specified value, false otherwise</returns>
         public bool Find(in T key, int hash, out int index, out int distance, out Ref<Container> result)
         {
             if (count > 0)

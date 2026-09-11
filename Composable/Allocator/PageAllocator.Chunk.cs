@@ -27,7 +27,7 @@ namespace Soe.Composable
             public bool IsEmpty
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get { return  Handler == null; }
+                get { return (Volatile.Read(ref Handler) == null); }
             }
         }
     }
