@@ -15,7 +15,7 @@ namespace Soe.Composable
         /// <summary>
         /// Represents a container element of the <seealso cref="SparseMap{T}"/>
         /// </summary>
-        struct SparseElement
+        protected struct SparseElement
         {
             /// <summary>
             /// A pointer to a block in a memory page

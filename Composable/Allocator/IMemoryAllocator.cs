@@ -11,7 +11,7 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    interface IMemoryAllocator
+    interface IMemoryAllocator : IDisposable
     {
         /// <summary>
         /// Accesses the memory block at the given index

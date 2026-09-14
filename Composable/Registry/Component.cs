@@ -13,7 +13,7 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    class Component<T> : SparseMap, IEnumerable<T>
+    class Component<T> : SparseMap, IComponent, IEnumerable<T>
         where T : struct
     {
         private readonly Shard shard;
@@ -46,16 +46,32 @@ namespace Soe.Composable
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Component(Shard shard)
+        internal Component(Shard shard)
         {
             this.shard = shard;
             this.entities = default;
             this.components = default;
         }
 
+        public void Clear()
+        {
+            IMemoryAllocator allocator = shard;
+            for (int i = Capacity - 1; i >= 0; i--)
+            {
+                if (data?[i].IsValid ?? false)
+                {
+                    allocator.Free(data[i].Handle);
+                    data[i] = default;   
+                }
+            }
+            entities.Clear();
+            components.Clear();
+            count = 0;
+        }
+        
         public ref T Add(EntityId entity)
         {
-            if(entity.Shard == shard.Id)
+            if(entity.ShardId == shard.Id)
             {
                 // Requires mutable access when scheduled
                 AccessManager.ThrowOnAccessViolation<Component<T>>(AccessType.Mutable);
@@ -91,11 +107,11 @@ namespace Soe.Composable
                     entities.Add(entity);
 
                     // Write a modified version of entity to its slot in the sparse map so entity.Index -> dense index
-                    allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, new EntityId(index, entity.Version, entity.Shard, entity.Flags));
+                    allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, new EntityId(index, entity.Version, entity.ShardId, entity.Flags));
                 }
                 return ref components[index];
             }
-            else throw new ArgumentOutOfRangeException(nameof(entity.Shard));
+            else throw new ArgumentOutOfRangeException(nameof(entity.ShardId));
         }
 
         public bool Remove(EntityId entity)
@@ -112,7 +128,7 @@ namespace Soe.Composable
                 if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
                 {
                     // Mark component as removed by adding the reserved flag
-                    allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, new EntityId(entityPtr.Index, entityPtr.Version, entityPtr.Shard, EntityFlags.Reserved));
+                    allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, new EntityId(entityPtr.Index, entityPtr.Version, entityPtr.ShardId, EntityFlags.Reserved));
                     if (entityPtr.Index < Count - 1)
                     {
                         // Swap entity data with last entity
@@ -120,7 +136,7 @@ namespace Soe.Composable
                         if (Find(swap.Index, out _, out _, out handle))
                         {
                             EntityId tmp = allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask);
-                            allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.Shard, tmp.Flags));
+                            allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.ShardId, tmp.Flags));
 
                             Swap(entityPtr.Index, tmp.Index);
                         }

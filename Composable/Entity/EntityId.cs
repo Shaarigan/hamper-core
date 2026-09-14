@@ -37,12 +37,12 @@ namespace Soe.Composable
         }
 
         [FieldOffset(6)]
-        readonly byte shard;
+        readonly byte shardId;
 
-        public int Shard
+        public int ShardId
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return shard; }
+            get { return shardId; }
         }
 
         [FieldOffset(7)]
@@ -58,7 +58,7 @@ namespace Soe.Composable
         {
             this.index = index;
             this.version = (UInt16)version;
-            this.shard = (byte)shard;
+            this.shardId = (byte)shard;
             this.flags = flags;
         }
         
@@ -103,7 +103,7 @@ namespace Soe.Composable
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString()
         {
-            return $"{{Index: {index}, Version: {version}, Shard: {shard}, Flags: {flags}}}";
+            return $"{{Index: {index}, Version: {version}, Shard: {shardId}, Flags: {flags}}}";
         }
     }
 }

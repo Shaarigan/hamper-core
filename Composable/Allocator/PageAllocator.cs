@@ -20,7 +20,7 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    partial class PageAllocator : IMemoryAllocator
+    partial class PageAllocator : FinalizerObject, IMemoryAllocator
     {
         public const int MaxPageCount = UInt16.MaxValue;
         
@@ -145,31 +145,62 @@ namespace Soe.Composable
                 else throw new OutOfMemoryException();
             }
         }
-        
+
+        protected override bool Dispose(bool disposing)
+        {
+            if (base.Dispose(disposing))
+            {
+                using (ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.ExclusiveOperation>(ref lockVariable))
+                {
+                    foreach(ref Chunk chunk in chunks.AsSpan())
+                    {
+                        if (chunk.Handler is MemoryMappedViewAccessor accessor)
+                        {
+                            accessor.Dispose();
+                            chunk = default;
+                        }
+                    }
+                    pages.Dispose();
+                }
+                return true;
+            }
+            else return false;
+        }
+
         /// <inheritdoc/>
         public void Free(in MemoryHandle handle)
         {
+            int index = handle.PageIndex;
             using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))
             {
                 Span<Chunk> list = chunks.AsSpan();
-                if (handle.PageIndex < list.Length && (handle.BlockIndex * MemoryAllocator.BlockSize) + handle.BlockSize <= MemoryAllocator.PageSize)
+                if (index < list.Length && handle.BlockIndex + handle.BlockSize <= MemoryAllocator.PageSize)
                 {
-                    ref Chunk chunk = ref list[handle.PageIndex];
+                    ref Chunk chunk = ref list[index];
 
                 Retry:
                     UInt64 freeList = Volatile.Read(ref chunk.FreeList);
                     if (Interlocked.CompareExchange(ref chunk.FreeList, (freeList & ~(((1ul << (handle.BlockSize >> 6)) - 1) << handle.BlockIndex)), freeList) == freeList)
                     {
                         int freeIndex = Volatile.Read(ref firstFreeIndex);
-                        if (handle.PageIndex < freeIndex)
+                        if (index < freeIndex)
                         {
                             // Set the hint to where to look for free chunks to this page if possible
-                            Interlocked.CompareExchange(ref firstFreeIndex, handle.PageIndex, freeIndex);
+                            Interlocked.CompareExchange(ref firstFreeIndex, index, freeIndex);
                         }
                     }
                     else goto Retry;
                 }
                 else throw new IndexOutOfRangeException();
+            }
+            using (ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.ExclusiveOperation>(ref lockVariable))
+            {
+                Span<Chunk> list = chunks.AsSpan();
+                if (list[index].FreeList == 0 && list[index].Handler is  MemoryMappedViewAccessor accessor)
+                {
+                    accessor.Dispose();
+                    list[index] = default;
+                }
             }
         }
         

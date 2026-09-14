@@ -1,6 +1,7 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
+using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace Soe.Collections.HashSet
@@ -36,7 +37,7 @@ namespace Soe.Collections.HashSet
     #else
     internal
     #endif
-    partial struct HashSet<T, Container>(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor)
+    partial struct HashSet<T, Container>(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor) : IEnumerable<Container>
         where Container : struct, IHashContainer<T>
     {
         private int moduloMask = 0;
@@ -290,6 +291,25 @@ namespace Soe.Collections.HashSet
                 }
             }
             version++;
+        }
+
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(items, count);
+        }
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        IEnumerator<Container> IEnumerable<Container>.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

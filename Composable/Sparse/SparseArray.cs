@@ -15,7 +15,7 @@ namespace Soe.Composable
     #endif
     abstract partial class SparseArray
     {
-        private MemoryHandle[]? data;
+        protected MemoryHandle[]? data;
         /// <summary>
         /// Gets the current number of elements in the array
         /// </summary>

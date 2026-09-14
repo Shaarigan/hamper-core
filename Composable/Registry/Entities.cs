@@ -40,12 +40,28 @@ namespace Soe.Composable
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Entities(Shard shard)
+        internal Entities(Shard shard)
         {
             this.shard = shard;
             this.freeList = EntityId.Invalid;
             this.maxID = 0;
             this.entities = default;
+        }
+        
+        public void Clear()
+        {
+            IMemoryAllocator allocator = shard;
+            for (int i = Length - 1; i >= 0; i--)
+            {
+                if (data?[i].IsValid ?? false)
+                {
+                    allocator.Free(data[i]);
+                    data[i] = default; 
+                }
+            }
+            entities.Clear();
+            this.freeList = EntityId.Invalid;
+            this.maxID = 0;
         }
 
         public EntityId Create()
@@ -80,7 +96,7 @@ namespace Soe.Composable
             else
             {
                 // Use recyclable entity
-                entity = new EntityId(freeList.Index, freeList.Version + 1, freeList.Shard, EntityFlags.None);
+                entity = new EntityId(freeList.Index, freeList.Version + 1, freeList.ShardId, EntityFlags.None);
                 int slot = entity.Index >> MemoryAllocator.BlockShift;
                 if (Find(slot, out handle))
                 {
@@ -94,7 +110,7 @@ namespace Soe.Composable
             entities.Add(entity);
 
             // Write a modified version of entity to its slot in the sparse array so entity.Index -> dense index
-            allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, new EntityId(index, entity.Version, entity.Shard, entity.Flags));
+            allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, new EntityId(index, entity.Version, entity.ShardId, entity.Flags));
             return entity;
         }
 
@@ -112,7 +128,7 @@ namespace Soe.Composable
                 if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
                 {
                     allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, freeList);
-                    freeList = new EntityId(entity.Index, entity.Version, entity.Shard, EntityFlags.Reserved);
+                    freeList = new EntityId(entity.Index, entity.Version, entity.ShardId, EntityFlags.Reserved);
 
                     if (entityPtr.Index < Count - 1)
                     {
@@ -121,7 +137,7 @@ namespace Soe.Composable
                         if (Find(swap.Index, out handle))
                         {
                             EntityId tmp = allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask);
-                            allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.Shard, tmp.Flags));
+                            allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.ShardId, tmp.Flags));
 
                             Swap(entityPtr.Index, tmp.Index);
                         }

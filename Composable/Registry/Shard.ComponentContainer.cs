@@ -14,7 +14,7 @@ namespace Soe.Composable
     partial class Shard
     {
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        struct ComponentContainer(object instance, int hash, Type key) : IHashContainer<Type>
+        struct ComponentContainer(IComponent instance, int hash, Type key) : IHashContainer<Type>
         {
             /// <inheritdoc/>
             public int Hash
@@ -50,6 +50,12 @@ namespace Soe.Composable
                     result = null;
                     return false;
                 }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Clear()
+            {
+                instance.Clear();
             }
         }
     }

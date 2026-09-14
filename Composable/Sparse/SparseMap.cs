@@ -24,7 +24,7 @@ namespace Soe.Composable
         public const float LoadFactor = 0.86f;
         private int moduloMask;
         
-        private SparseElement[]? data;
+        protected SparseElement[]? data;
         /// <summary>
         /// Gets the maximum number of elements that can be stored
         /// </summary>
@@ -34,7 +34,7 @@ namespace Soe.Composable
             get { return data?.Length ?? 0; }
         }
         
-        private int count;
+        protected int count;
         /// <summary>
         /// Gets the current number of elements stored
         /// </summary>

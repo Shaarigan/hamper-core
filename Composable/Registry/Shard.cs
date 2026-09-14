@@ -1,10 +1,8 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Soe.Collections.HashSet;
-using Soe.Threading;
 
 namespace Soe.Composable
 {
@@ -15,8 +13,6 @@ namespace Soe.Composable
     #endif
     partial class Shard : IMemoryAllocator
     {
-        static int NextShardId = 0;
-        
         private readonly IMemoryAllocator allocator;
         private HashSet<Type, ComponentContainer> components;
         
@@ -38,14 +34,63 @@ namespace Soe.Composable
         
         public Shard(IMemoryAllocator allocator)
         {
-            this.id = Interlocked.Increment(ref NextShardId) - 1;
+            this.id = GetNextId(this);
             
             this.allocator = allocator;
-            this.components = default;
+            this.components = new HashSet<Type, ComponentContainer>(EqualityComparer<Type>.Default);
             this.entities = new Entities(this);
         }
 
+        public void Dispose()
+        {
+            using(HashSet<Type, ComponentContainer>.Enumerator enumerator = components.GetEnumerator())
+            {
+                while (enumerator.MoveNext())
+                {
+                    enumerator.Current.Clear();
+                }
+            }
+            components.Clear();
+            entities.Clear();
+            ReturnId(id);
+            
+            allocator.Dispose();
+        }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Component<T> RegisterComponent<T>()
+            where T : struct
+        {
+            Type componentType = typeof(T);
+            int hash = componentType.GetHashCode();
+            
+            ref ComponentContainer result = ref components.Emplace(componentType, hash);
+            if (!result.IsValid)
+            {
+                result = new ComponentContainer(new Component<T>(this), hash, componentType);
+            }
+            if (result.GetInstance(out Component<T>? instance))
+            {
+                return instance!;
+            }
+            else throw new TypeAccessException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryGetComponent<T>(out Component<T>? component)
+            where T : struct
+        {
+            Type componentType = typeof(T);
+            if (components.Find(componentType, componentType.GetHashCode(), out _, out _, out Ref<ComponentContainer> result) && result.Value.GetInstance(out component))
+            {
+                return true;
+            }
+            else
+            {
+                component = null;
+                return false;
+            }
+        }
         
         #region IMemoryAllocator implementation
         /// <inheritdoc/>
