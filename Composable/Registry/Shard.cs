@@ -43,11 +43,13 @@ namespace Soe.Composable
 
         public void Dispose()
         {
-            using(HashSet<Type, ComponentContainer>.Enumerator enumerator = components.GetEnumerator())
+            Span<ComponentContainer> registry = components.AsSpan();
+            for(int i = 0; i < registry.Length; i++)
             {
-                while (enumerator.MoveNext())
+                if (registry[i].IsValid)
                 {
-                    enumerator.Current.Clear();
+                    registry[i].Clear();
+                    registry[i] = default;
                 }
             }
             components.Clear();

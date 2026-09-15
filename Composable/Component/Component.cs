@@ -1,7 +1,6 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System.Collections;
 using System.Runtime.CompilerServices;
 using Soe.Collections.Embedded;
 using Soe.Threading;
@@ -13,7 +12,7 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    class Component<T> : SparseMap, IComponent, IEnumerable<T>
+    partial class Component<T> : SparseMap, IComponent, IReadOnlySequence<EntityId>, ISequence<T>
         where T : struct
     {
         private readonly Shard shard;
@@ -32,18 +31,6 @@ namespace Soe.Composable
                 return components.Count;
             }
         }
-
-        public ReadOnlySpan<EntityId> Entities
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                // Requires at least immutable access when scheduled
-                AccessManager.ThrowOnLessAccessible<Component<T>>(AccessType.Immutable);
-                
-                return entities.AsReadOnlySpan();
-            }
-        }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Component(Shard shard)
@@ -51,6 +38,25 @@ namespace Soe.Composable
             this.shard = shard;
             this.entities = default;
             this.components = default;
+        }
+        
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Span<T> AsSpan()
+        {
+            // Requires at least immutable access when scheduled
+            AccessManager.ThrowOnLessAccessible<Component<T>>(AccessType.Immutable);
+
+            return components.AsSpan();
+        }
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlySpan<EntityId> AsReadOnlySpan()
+        {
+            // Requires at least immutable access when scheduled
+            AccessManager.ThrowOnLessAccessible<Component<T>>(AccessType.Immutable);
+
+            return entities.AsReadOnlySpan();
         }
 
         public void Clear()
@@ -180,22 +186,6 @@ namespace Soe.Composable
 
             result = Ref<T>.CreateEmpty();
             return false;
-        }
-
-        /// <inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerator<T> GetEnumerator()
-        {
-            // Requires at least immutable access when scheduled
-            AccessManager.ThrowOnLessAccessible<Component<T>>(AccessType.Immutable);
-            
-            return components.GetEnumerator();
-        }
-        /// <inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }

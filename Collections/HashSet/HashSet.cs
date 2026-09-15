@@ -37,7 +37,7 @@ namespace Soe.Collections.HashSet
     #else
     internal
     #endif
-    partial struct HashSet<T, Container>(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor) : IEnumerable<Container>
+    partial struct HashSet<T, Container>(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor) : ISequence<Container>
         where Container : struct, IHashContainer<T>
     {
         private int moduloMask = 0;
@@ -82,6 +82,13 @@ namespace Soe.Collections.HashSet
             get { return version; }
         }
 
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Span<Container> AsSpan()
+        {
+            return items.AsSpan();
+        }
+        
         /// <summary>
         /// Clears the contents of this container to its default value
         /// </summary>
@@ -291,25 +298,6 @@ namespace Soe.Collections.HashSet
                 }
             }
             version++;
-        }
-
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(items, count);
-        }
-        /// <inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        IEnumerator<Container> IEnumerable<Container>.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-        /// <inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }

@@ -13,7 +13,7 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    class Entities : SparseArray, IEnumerable<EntityId>
+    class Entities : SparseArray, IReadOnlySequence<EntityId>
     {
         private readonly Shard shard;
         private EntityId freeList;
@@ -46,6 +46,16 @@ namespace Soe.Composable
             this.freeList = EntityId.Invalid;
             this.maxID = 0;
             this.entities = default;
+        }
+        
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlySpan<EntityId> AsReadOnlySpan()
+        {
+            // Requires at least immutable access when scheduled
+            AccessManager.ThrowOnLessAccessible<Entities>(AccessType.Immutable);
+            
+            return entities.AsReadOnlySpan();
         }
         
         public void Clear()
@@ -177,22 +187,6 @@ namespace Soe.Composable
 
             result = EntityId.Invalid;
             return false;
-        }
-
-        /// <inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerator<EntityId> GetEnumerator()
-        {
-            // Requires at least immutable access when scheduled
-            AccessManager.ThrowOnLessAccessible<Entities>(AccessType.Immutable);
-            
-            return entities.GetEnumerator();
-        }
-        /// <inheritdoc/>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }
