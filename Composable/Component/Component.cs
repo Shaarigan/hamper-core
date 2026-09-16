@@ -17,8 +17,15 @@ namespace Soe.Composable
     {
         private readonly Shard shard;
 
+        public int ShardId
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return shard.Id; }
+        }
+        
         private EmbeddedList<EntityId> entities;
         private EmbeddedList<T> components;
+        private IComponentGroup? group;
         
         public new int Count
         {
@@ -38,6 +45,7 @@ namespace Soe.Composable
             this.shard = shard;
             this.entities = default;
             this.components = default;
+            this.group = null;
         }
         
         /// <inheritdoc/>
@@ -59,20 +67,10 @@ namespace Soe.Composable
             return entities.AsReadOnlySpan();
         }
 
-        public void Clear()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool AttachGroup(IComponentGroup componentGroup)
         {
-            IMemoryAllocator allocator = shard;
-            for (int i = Capacity - 1; i >= 0; i--)
-            {
-                if (data?[i].IsValid ?? false)
-                {
-                    allocator.Free(data[i].Handle);
-                    data[i] = default;   
-                }
-            }
-            entities.Clear();
-            components.Clear();
-            count = 0;
+            return (Interlocked.CompareExchange(ref group, componentGroup, null) == null);
         }
         
         public ref T Add(EntityId entity)
@@ -114,10 +112,49 @@ namespace Soe.Composable
 
                     // Write a modified version of entity to its slot in the sparse map so entity.Index -> dense index
                     allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, new EntityId(index, entity.Version, entity.ShardId, entity.Flags));
+                    
+                    // Notify listeners
+                    Volatile.Read(ref group)?.ComponentAdded<T>(entity, ref index);
                 }
                 return ref components[index];
             }
             else throw new ArgumentOutOfRangeException(nameof(entity.ShardId));
+        }
+        
+        public void Clear()
+        {
+            IMemoryAllocator allocator = shard;
+            for (int i = Capacity - 1; i >= 0; i--)
+            {
+                if (data?[i].IsValid ?? false)
+                {
+                    allocator.Free(data[i].Handle);
+                    data[i] = default;   
+                }
+            }
+            entities.Clear();
+            components.Clear();
+            count = 0;
+        }
+
+        internal int IndexOf(EntityId entity)
+        {
+            // Requires mutable access when scheduled
+            AccessManager.ThrowOnLessAccessible<Component<T>>(AccessType.Immutable);
+            
+            if (Find(entity.Index >> MemoryAllocator.BlockShift, out _, out _, out Ref<MemoryHandle> handle))
+            {
+                IMemoryAllocator allocator = shard;
+                
+                // Look the entity up in the sparse map
+                EntityId entityPtr = allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask);
+                if (((~EntityId.Null & entity) ^ entityPtr) < EntityId.Null)
+                {
+                    // Entity exists and is alive
+                    return entityPtr.Index;
+                }
+            }
+            return -1;
         }
 
         public bool Remove(EntityId entity)
@@ -137,14 +174,21 @@ namespace Soe.Composable
                     allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, new EntityId(entityPtr.Index, entityPtr.Version, entityPtr.ShardId, EntityFlags.Reserved));
                     if (entityPtr.Index < Count - 1)
                     {
+                        // Notify group
+                        {
+                            int componentIndex = entityPtr.Index;
+                            Volatile.Read(ref group)?.ComponentRemoved<T>(entity, ref componentIndex);
+                            entityPtr = new EntityId(componentIndex, entityPtr.Version, entityPtr.ShardId, entityPtr.Flags);
+                        }
+                        
                         // Swap entity data with last entity
                         EntityId swap = entities[Count - 1];
-                        if (Find(swap.Index, out _, out _, out handle))
+                        if (Find(swap.Index >> MemoryAllocator.BlockShift, out _, out _, out handle))
                         {
                             EntityId tmp = allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask);
                             allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.ShardId, tmp.Flags));
 
-                            Swap(entityPtr.Index, tmp.Index);
+                            SwapValues(entityPtr.Index, tmp.Index);
                         }
                         else throw new AccessViolationException();
                     }
@@ -152,7 +196,7 @@ namespace Soe.Composable
                     int index = Count - 1;
                     components.RemoveAt(index);
                     entities.RemoveAt(index);
-
+                    
                     return true;
                 }
             }
@@ -160,7 +204,43 @@ namespace Soe.Composable
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void Swap(int oldIndex, int newIndex)
+        internal bool ReleaseGroup(IComponentGroup componentGroup)
+        {
+            return (Interlocked.CompareExchange(ref group, null, componentGroup) != null);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool Swap(int source, int target)
+        {
+            // Requires mutable access when scheduled
+            AccessManager.ThrowOnAccessViolation<Component<T>>(AccessType.Mutable);
+            
+            if (Swap(entities[source], entities[target]))
+            {
+                SwapValues(source, target);
+                return true;
+            }
+            else return false;
+        }
+        bool Swap(EntityId source, EntityId target)
+        {
+            if (Find(source.Index >> MemoryAllocator.BlockShift, out _, out _, out Ref<MemoryHandle> sourceHandle) &&
+                Find(target.Index >> MemoryAllocator.BlockShift, out _, out _, out Ref<MemoryHandle> targetHandle))
+            {
+                IMemoryAllocator allocator = shard;
+
+                EntityId sourcePtr = allocator.Access(sourceHandle.Value, source.Index & MemoryAllocator.BlockMask);
+                EntityId targetPtr = allocator.Access(targetHandle.Value, target.Index & MemoryAllocator.BlockMask);
+                
+                allocator.Access(sourceHandle.Value, source.Index & MemoryAllocator.BlockMask, new EntityId(targetPtr.Index, sourcePtr.Version, sourcePtr.ShardId, sourcePtr.Flags));
+                allocator.Access(targetHandle.Value, target.Index & MemoryAllocator.BlockMask, new EntityId(sourcePtr.Index, targetPtr.Version, targetPtr.ShardId, targetPtr.Flags));
+
+                return true;
+            }
+            else return false;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void SwapValues(int oldIndex, int newIndex)
         {
             (components[oldIndex], components[newIndex]) = (components[newIndex], components[oldIndex]);
             (entities[oldIndex], entities[newIndex]) = (entities[newIndex], entities[oldIndex]);
@@ -171,7 +251,7 @@ namespace Soe.Composable
             // Requires at least immutable access when scheduled
             AccessManager.ThrowOnLessAccessible<Component<T>>(AccessType.Immutable);
             
-            if (Find(entity.Index, out _, out _, out Ref<MemoryHandle> handle))
+            if (Find(entity.Index >> MemoryAllocator.BlockShift, out _, out _, out Ref<MemoryHandle> handle))
             {
                 IMemoryAllocator allocator = shard;
                 

@@ -113,12 +113,13 @@ namespace Soe.Collections.HashSet
         /// <returns>A reference to the added or existing element</returns>
         public ref Container Emplace(in T key, int hash, int index, int distance, int currentVersion)
         {
+        Head:
             if (version == currentVersion || !Find(key, hash, out index, out distance, out Ref<Container> result))
             {
                 if (items == null || count >= items.Length * loadFactor)
                 {
                     Grow();
-                    index = (hash & moduloMask);
+                    goto Head;
                 }
 
                 version++;
@@ -221,9 +222,9 @@ namespace Soe.Collections.HashSet
         /// <returns>True if this container contains an element with the specified value, false otherwise</returns>
         public bool Find(in T key, int hash, out int index, out int distance, out Ref<Container> result)
         {
+            index = (hash & moduloMask);
             if (count > 0)
             {
-                index = (hash & moduloMask);
                 distance = 0;
 
                 for (int length = items?.Length ?? 0; distance < length; distance++, index = (index + 1) & moduloMask)
@@ -241,9 +242,7 @@ namespace Soe.Collections.HashSet
                     else break;
                 }
             }
-
-            index = 0;
-            distance = 0;
+            else distance = 0;
             
             result = Ref<Container>.CreateEmpty(); 
             return false;

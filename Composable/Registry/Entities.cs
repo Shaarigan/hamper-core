@@ -129,7 +129,7 @@ namespace Soe.Composable
             // Requires mutable access when scheduled
             AccessManager.ThrowOnAccessViolation<Entities>(AccessType.Mutable);
             
-            if (Find(entity.Index, out Ref<MemoryHandle> handle))
+            if (Find(entity.Index >> MemoryAllocator.BlockShift, out Ref<MemoryHandle> handle))
             {
                 IMemoryAllocator allocator = shard;
                 
@@ -144,7 +144,7 @@ namespace Soe.Composable
                     {
                         // Swap entity data with last entity
                         EntityId swap = entities[Count - 1];
-                        if (Find(swap.Index, out handle))
+                        if (Find(swap.Index >> MemoryAllocator.BlockShift, out handle))
                         {
                             EntityId tmp = allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask);
                             allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask, new EntityId(entityPtr.Index, tmp.Version, tmp.ShardId, tmp.Flags));
@@ -172,7 +172,7 @@ namespace Soe.Composable
             // Requires at least immutable access when scheduled
             AccessManager.ThrowOnLessAccessible<Entities>(AccessType.Immutable);
             
-            if (Find(entity.Index, out Ref<MemoryHandle> handle))
+            if (Find(entity.Index >> MemoryAllocator.BlockShift, out Ref<MemoryHandle> handle))
             {
                 IMemoryAllocator allocator = shard;
                 

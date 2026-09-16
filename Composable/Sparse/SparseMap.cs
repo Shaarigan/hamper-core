@@ -82,12 +82,13 @@ namespace Soe.Composable
         /// <returns>A reference to the memory handle the entity is stored in or empty</returns>
         protected ref MemoryHandle Emplace(int slot, int index, int distance, int currentVersion)
         {
+        Head:
             if (version == currentVersion || !Find(slot, out index, out distance, out Ref<MemoryHandle> handle))
             {
                 if (data == null || count >= data.Length * LoadFactor)
                 {
                     Grow();
-                    index = (slot & moduloMask);
+                    goto Head;
                 }
 
                 ref SparseElement element = ref data![Emplace(index, distance)];
@@ -181,9 +182,9 @@ namespace Soe.Composable
         /// <returns>True if the element was found in this collection, false otherwise</returns>
         protected bool Find(int slot, out int index, out int distance, out Ref<MemoryHandle> memoryHandle)
         {
+            index = (slot & moduloMask);
             if (count > 0)
             {
-                index = (slot & moduloMask);
                 distance = 0;
 
                 for (int length = data?.Length ?? 0; distance < length; distance++, index = (index + 1) & moduloMask)
@@ -201,9 +202,7 @@ namespace Soe.Composable
                     else break;
                 }
             }
-
-            index = 0;
-            distance = 0;
+            else distance = 0;
             
             memoryHandle = Ref<MemoryHandle>.CreateEmpty(); 
             return false;

@@ -66,7 +66,7 @@ namespace Soe.Composable
             {
                 if (data == null || slot >= Length)
                 {
-                    Reserve(slot.NextPowerOfTwo());
+                    Reserve((slot + 1).NextPowerOfTwo());
                 }
                 version++;
             }
