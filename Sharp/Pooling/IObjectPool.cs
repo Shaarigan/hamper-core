@@ -1,7 +1,7 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-namespace System
+namespace System.Buffers
 {
     /// <summary>
     /// Provides a resource pool that enables reusing instances of type <typeparamref name="T"/>

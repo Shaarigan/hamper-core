@@ -4,7 +4,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace System
+namespace System.Buffers
 {
     /// <summary>
     /// A policy managing instances of type <typeef name="StringBuilder"/>

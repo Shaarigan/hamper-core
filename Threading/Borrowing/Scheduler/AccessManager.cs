@@ -1,6 +1,7 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Soe.Collections.Inline;
@@ -867,12 +868,14 @@ namespace Soe.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static TaskNode GetNodeInstance()
         {
-            return new TaskNode();
+            return GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Rent();
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void ReturnNodeInstance(TaskNode node)
-        {}
+        {
+            GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Return(node);
+        }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static int Compare(HashedDependencyProxy x, HashedDependencyProxy y)

@@ -1,7 +1,7 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-namespace System
+namespace System.Buffers
 {
     /// <summary>
     /// A policy managing the pooling behavior of type <typeparamref name="T"/>

@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace System
+namespace System.Buffers
 {
     /// <summary>
     /// A generic pooling policy over type <typeparamref name="T"/>

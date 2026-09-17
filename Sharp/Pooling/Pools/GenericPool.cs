@@ -2,7 +2,6 @@
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace System.Buffers
 {
@@ -14,22 +13,24 @@ namespace System.Buffers
     #else
     internal
     #endif
-    sealed class StringBuilderPool : ObjectPool<StringBuilder, StringBuilderPolicy>
+    sealed class GenericPool<T, Policy> : ObjectPool<T, Policy>
+        where T : class, new()
+        where Policy : struct, IPoolPolicy<T>
     {
-        private static readonly StringBuilderPool instance;
+        private static readonly GenericPool<T, Policy> instance;
         /// <summary>
-        /// A shared instance of the <typeef name="StringBuilder"/> pool
+        /// A shared instance of the <typeparamref name="T"/> pool
         /// </summary>
-        public static StringBuilderPool Shared
+        public static GenericPool<T, Policy> Shared
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return instance; }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static StringBuilderPool()
+        static GenericPool()
         {
-            instance = new StringBuilderPool();
+            instance = new GenericPool<T, Policy>();
         }
         
         /// <inheritdoc/>
@@ -38,7 +39,7 @@ namespace System.Buffers
         {
             if (disposing && this == instance)
             {
-                throw new InvalidOperationException(string.Concat(nameof(StringBuilderPool), ".Dispose of shared instance"));
+                throw new InvalidOperationException(string.Concat(nameof(GenericPool<T, Policy>), ".Dispose of shared instance"));
             }
             else return base.Dispose(disposing);
         }

@@ -1,31 +1,29 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-
-using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using Soe.Collections.Inline;
+using Soe.Threading;
 
-namespace System
+namespace System.Buffers
 {
     /// <summary>
     /// Provides a resource pool that enables reusing instances of type <typeparamref name="T"/>
     /// </summary>
     /// <typeparam name="T">A reference type</typeparam>
-    /// <typeparam name="PoolPolicy">A policy managing type <typeparamref name="T"/></typeparam>
+    /// <typeparam name="Policy">A policy managing type <typeparamref name="T"/></typeparam>
     #if HAMPER_CORE_SHARP
     public
     #else
     internal
     #endif
-    class ObjectPool<T, PoolPolicy> : FinalizerObject, IObjectPool<T>
+    partial class ObjectPool<T, Policy> : FinalizerObject, IObjectPool<T>
         where T : class
-        where PoolPolicy : struct, IPoolPolicy<T>
+        where Policy : struct, IPoolPolicy<T>
     {
-        private readonly ConcurrentStack<T> pool;
-        
-        #pragma warning disable CS0649
-        private readonly PoolPolicy policy;
-        #pragma warning restore CS0649
+        private readonly Policy policy;
+        private FixedArray<T?, FixedArray16<T?>> array;
+        private ConcurrentBuffer<T> pool;
         
         /// <summary>
         /// Gets the amount of objects currently pooled
@@ -39,7 +37,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ObjectPool()
         {
-            this.pool = new ConcurrentStack<T>();
+            this.policy = default;
+            this.array = default;
+            this.pool = default;
         }
 
         /// <inheritdoc/>
@@ -48,11 +48,16 @@ namespace System
         {
             if (!Disposed)
             {
-                for (T? instance; pool.TryPop(out instance);)
+                for (; pool.TryDequeue(ref array, out T? instance);)
                 {
-                    // ReSharper disable PossiblyImpureMethodCallOnReadonlyVariable
-                    policy.OnDispose(instance);
-                    // ReSharper restore PossiblyImpureMethodCallOnReadonlyVariable
+                    if(instance != null)
+                    {
+                        // ReSharper disable PossiblyImpureMethodCallOnReadonlyVariable
+                        
+                        policy.OnDispose(instance);
+                        
+                        // ReSharper restore PossiblyImpureMethodCallOnReadonlyVariable
+                    }
                 }
             }
             else throw ThrowOnDisposed();
@@ -75,16 +80,23 @@ namespace System
         {
             if (!Disposed)
             {
-                if (pool.TryPop(out T? instance))
+                if (pool.TryDequeue(ref array, out T? instance))
                 {
-                    // ReSharper disable PossiblyImpureMethodCallOnReadonlyVariable
-                    policy.OnRent(ref instance);
-                    // ReSharper restore PossiblyImpureMethodCallOnReadonlyVariable
-                    
-                    return instance;
+                    if(instance != null)
+                    {
+                        // ReSharper disable PossiblyImpureMethodCallOnReadonlyVariable
+
+                        policy.OnRent(ref instance);
+
+                        // ReSharper restore PossiblyImpureMethodCallOnReadonlyVariable
+
+                        return instance;
+                    }
                 }
                 // ReSharper disable PossiblyImpureMethodCallOnReadonlyVariable
-                else return policy.CreateInstance();
+                
+                return policy.CreateInstance();
+                
                 // ReSharper restore PossiblyImpureMethodCallOnReadonlyVariable
             }
             else throw ThrowOnDisposed();
@@ -98,10 +110,19 @@ namespace System
             if (!Disposed)
             {
                 // ReSharper disable PossiblyImpureMethodCallOnReadonlyVariable
-                policy.OnReturn(ref instance);
-                // ReSharper restore PossiblyImpureMethodCallOnReadonlyVariable
                 
-                pool.Push(instance);
+                policy.OnReturn(ref instance);
+                
+                // ReSharper restore PossiblyImpureMethodCallOnReadonlyVariable
+
+                if (!pool.TryEnqueue(ref array, instance, out _))
+                {
+                    // ReSharper disable PossiblyImpureMethodCallOnReadonlyVariable
+                        
+                    policy.OnDispose(instance);
+                        
+                    // ReSharper restore PossiblyImpureMethodCallOnReadonlyVariable
+                }
             }
             else throw ThrowOnDisposed();
         }
@@ -112,7 +133,8 @@ namespace System
         {
             if (base.Dispose(disposing))
             {
-                pool.Clear();
+                array.Clear();
+                pool.Reset();
                 return true;
             }
             else return false;
