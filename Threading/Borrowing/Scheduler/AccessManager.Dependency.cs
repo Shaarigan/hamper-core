@@ -47,35 +47,21 @@ namespace Soe.Threading
             /// <param name="node">The task instance to append</param>
             /// <typeparam name="Policy">The desired access policy</typeparam>
             /// <returns>True if the node has other tasks to wait on, false otherwise</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool Append<Policy>(object instance, TaskNode node)
                 where Policy : struct, IAccessPolicy
             {
                 int hash = RuntimeHelpers.GetHashCode(instance);
-                int index;
-                int distance;
-                int version;
-                
                 using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))  
                 {  
-                    if(tasks.Find(instance, hash, out index, out distance, out Ref<TaskList> result))  
+                    if(tasks.Find(instance, hash, out _, out _, out Ref<TaskList> result))  
                     {  
                         return result.Value.Append<T, Policy>(node);
                     }
-                    version = tasks.Version;
                 }
-                SynchronizationBarrier.BeginExclusiveOperation(ref lockVariable);
-                using(ScopedDisposable.Create<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))   
-                {  
-                    ref TaskList taskList = ref tasks.Emplace(instance, hash, index, distance, version);
-                    if(!taskList.IsValid)
-                    {
-                        taskList = new TaskList(CreateInstanceId(), hash, instance);
-                    }
-
-                    // Downgrade exclusive access to shared access
-                    SynchronizationBarrier.TryShiftReleaseExclusiveOperation(ref lockVariable);
-                    return taskList.Append<T, Policy>(node);
-                }
+                
+                // Should never be reached
+                throw new InvalidOperationException();
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -104,17 +90,13 @@ namespace Soe.Threading
                     }
                     version = tasks.Version;
                 }
-                SynchronizationBarrier.BeginExclusiveOperation(ref lockVariable);
-                using(ScopedDisposable.Create<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))   
+                using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.ExclusiveOperation>(ref lockVariable))   
                 {  
                     ref TaskList taskList = ref tasks.Emplace(instance, hash, index, distance, version);
                     if(!taskList.IsValid)
                     {
                         taskList = new TaskList(CreateInstanceId(), hash, instance);
                     }
-
-                    // Downgrade exclusive access to shared access
-                    SynchronizationBarrier.TryShiftReleaseExclusiveOperation(ref lockVariable);
                     return taskList.UniqueId;
                 }
             }

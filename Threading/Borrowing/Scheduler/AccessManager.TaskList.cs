@@ -88,18 +88,31 @@ namespace Soe.Threading
                 where Policy : struct, IAccessPolicy
             {
                 int index = buffer.Enqueue(ref tasks, task);
+                
+                SpinWait wait = new SpinWait();
+                int i = -1;
+                
+            Retry:
+                if (i >= 0)
+                {
+                    // Reached from an uninitialized task
+                    wait.SpinOnce();
+                }
                 using (ScopedDisposable.Acquire<ConcurrentBuffer<TaskNode>, ConcurrentBuffer<TaskNode>.SharedOperation>(ref buffer))
                 {
-                    SpinWait wait = new SpinWait();
                     int moduloMask = tasks.Length - 1;
+                    if (i < 0)
+                    {
+                        i = ((index - 1) & moduloMask);
+                    }
                     
                     // Iterate from the current emplacement index to the tail of the buffer to find potential parents
-                    for (int beforeTail = ((buffer.Tail - 1) & moduloMask), i = ((index - 1) & moduloMask); i != beforeTail; i = ((i - 1) & moduloMask))
+                    for (int beforeTail = ((buffer.Tail - 1) & moduloMask); i != beforeTail; i = ((i - 1) & moduloMask))
                     {
-                        while (tasks[i]?.State < TaskNodeState.Initialized)
+                        if (tasks[i]?.State < TaskNodeState.Initialized)
                         {
                             // Wait until potential parent is fully initialized to prevent AB problems
-                            wait.SpinOnce();
+                            goto Retry;
                         }
                         AccessType order = tasks[i]?.GetAccess(uniqueId) ?? AccessType.Reserved;
                         #if DEBUG
