@@ -13,6 +13,8 @@ namespace Soe.Threading
     #endif
     static partial class AccessManager
     {
+        private static UInt32 dependencyUniqueId;
+        
         /// <summary>
         /// Manages the dependency graph instances for objects of type <typeparamref name="T"/>
         /// </summary>
@@ -20,16 +22,24 @@ namespace Soe.Threading
         static class Dependency<T>
             where T : class
         {
+            private static UInt32 instanceUniqueId;
+            
             private static HashSet<object, TaskList> tasks;
             private static UInt32 lockVariable;
+            private static UInt32 uniqueId;
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static Dependency()
             {
+                uniqueId = Interlocked.Increment(ref dependencyUniqueId);
+                if (uniqueId >= UInt16.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(uniqueId));
+                }
                 tasks = new HashSet<object, TaskList>(EqualityComparer<object>.Default);
                 lockVariable = 0;
             }
-
+            
             /// <summary>
             /// Appends a <see cref="TaskNode"/> instance to the access graph of the provided object
             /// </summary>
@@ -59,7 +69,7 @@ namespace Soe.Threading
                     ref TaskList taskList = ref tasks.Emplace(instance, hash, index, distance, version);
                     if(!taskList.IsValid)
                     {
-                        taskList = new TaskList(hash, instance);
+                        taskList = new TaskList(CreateInstanceId(), hash, instance);
                     }
 
                     // Downgrade exclusive access to shared access
@@ -68,6 +78,47 @@ namespace Soe.Threading
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static UInt32 CreateInstanceId()
+            {
+                UInt32 instanceId = Interlocked.Increment(ref instanceUniqueId);
+                if (instanceId >= UInt16.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(uniqueId));
+                }
+                return instanceId | (uniqueId << 16);
+            }
+            
+            public static UInt32 GetUniqueId(object instance)
+            {
+                int hash = RuntimeHelpers.GetHashCode(instance);
+                int index;
+                int distance;
+                int version;
+                
+                using(ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))  
+                {  
+                    if(tasks.Find(instance, hash, out index, out distance, out Ref<TaskList> result))
+                    {
+                        return result.Value.UniqueId;
+                    }
+                    version = tasks.Version;
+                }
+                SynchronizationBarrier.BeginExclusiveOperation(ref lockVariable);
+                using(ScopedDisposable.Create<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))   
+                {  
+                    ref TaskList taskList = ref tasks.Emplace(instance, hash, index, distance, version);
+                    if(!taskList.IsValid)
+                    {
+                        taskList = new TaskList(CreateInstanceId(), hash, instance);
+                    }
+
+                    // Downgrade exclusive access to shared access
+                    SynchronizationBarrier.TryShiftReleaseExclusiveOperation(ref lockVariable);
+                    return taskList.UniqueId;
+                }
+            }
+            
             /// <summary>
             /// Removes the appended <see cref="TaskNode"/> instances from the access graph of the provided object
             /// </summary>
@@ -101,10 +152,9 @@ namespace Soe.Threading
                 int hash = RuntimeHelpers.GetHashCode(instance);
                 using (ScopedDisposable.Acquire<UInt32, SynchronizationBarrier.SharedOperation>(ref lockVariable))
                 {
-                    if (tasks.Find(instance, hash, out _, out _, out Ref<TaskList> result) && result.Value.Count == 0)
+                    if (tasks.Find(instance, hash, out int index, out _, out Ref<TaskList> result) && result.Value.Count == 0)
                     {
-                        result.Value = default;
-                        return true;
+                        return tasks.Remove(instance, hash, index);
                     }
                     else return false;
                 }

@@ -21,7 +21,7 @@ namespace Soe.Threading
         /// </summary>
         /// <param name="parameter">Unused</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Acquire(ref T parameter)
+        public static void Acquire(ref T parameter)
         { }
 
         /// <summary>
@@ -29,7 +29,7 @@ namespace Soe.Threading
         /// </summary>
         /// <param name="parameter">Unused</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose(ref T parameter)
+        public static void Dispose(ref T parameter)
         { }
     }
 }

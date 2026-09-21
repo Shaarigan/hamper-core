@@ -26,7 +26,7 @@ namespace Soe.Threading
         public static RefScopedDisposable<T, Policy> Acquire<T, Policy>(ref T parameter)
             where Policy : struct, IRefScopePolicy<T>
         {
-            default(Policy).Acquire(ref parameter);
+            Policy.Acquire(ref parameter);
             return new RefScopedDisposable<T, Policy>(ref parameter);
         }
 
@@ -89,7 +89,6 @@ namespace Soe.Threading
         where Policy : struct, IScopePolicy<T>
     {
         private readonly T parameter;
-        private readonly Policy policy;
 
         /// <summary>
         /// Initializes the disposable instance
@@ -99,9 +98,8 @@ namespace Soe.Threading
         public ScopedDisposable(T parameter)
         {
             this.parameter = parameter;
-            this.policy = default;
             
-            policy.Initialize(parameter);
+            Policy.Initialize(parameter);
         }
         
         /// <summary>
@@ -110,7 +108,7 @@ namespace Soe.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
-            policy.Dispose(parameter);
+            Policy.Dispose(parameter);
         }
     }
     
@@ -128,7 +126,6 @@ namespace Soe.Threading
         where Policy : struct, IRefScopePolicy<T>
     {
         private readonly ref T parameter;
-        private readonly Policy policy;
 
         /// <summary>
         /// Initializes the disposable instance
@@ -138,7 +135,6 @@ namespace Soe.Threading
         public RefScopedDisposable(ref T parameter)
         {
             this.parameter = ref parameter;
-            this.policy = default;
         }
         
         /// <summary>
@@ -147,7 +143,7 @@ namespace Soe.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
-            policy.Dispose(ref parameter);
+            Policy.Dispose(ref parameter);
         }
     }
 }

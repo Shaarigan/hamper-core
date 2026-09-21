@@ -33,7 +33,7 @@ namespace Soe.Composable
             get
             {
                 // Requires at least immutable access when scheduled
-                AccessManager.ThrowOnLessAccessible<Entities>(AccessType.Immutable);
+                AccessManager.ThrowOnLessAccessible<Entities>(this, AccessType.Immutable);
                 
                 return entities.Count;
             }
@@ -53,7 +53,7 @@ namespace Soe.Composable
         public ReadOnlySpan<EntityId> AsReadOnlySpan()
         {
             // Requires at least immutable access when scheduled
-            AccessManager.ThrowOnLessAccessible<Entities>(AccessType.Immutable);
+            AccessManager.ThrowOnLessAccessible<Entities>(this, AccessType.Immutable);
             
             return entities.AsReadOnlySpan();
         }
@@ -77,7 +77,7 @@ namespace Soe.Composable
         public EntityId Create()
         {
             // Requires mutable access when scheduled
-            AccessManager.ThrowOnAccessViolation<Entities>(AccessType.Mutable);
+            AccessManager.ThrowOnAccessViolation<Entities>(this, AccessType.Mutable);
             
             Ref<MemoryHandle> handle;
             EntityId entity;
@@ -127,7 +127,7 @@ namespace Soe.Composable
         public bool Dispose(EntityId entity)
         {
             // Requires mutable access when scheduled
-            AccessManager.ThrowOnAccessViolation<Entities>(AccessType.Mutable);
+            AccessManager.ThrowOnAccessViolation<Entities>(this, AccessType.Mutable);
             
             if (Find(entity.Index >> MemoryAllocator.BlockShift, out Ref<MemoryHandle> handle))
             {
@@ -170,7 +170,7 @@ namespace Soe.Composable
         public bool TryGet(EntityId entity, out EntityId result)
         {
             // Requires at least immutable access when scheduled
-            AccessManager.ThrowOnLessAccessible<Entities>(AccessType.Immutable);
+            AccessManager.ThrowOnLessAccessible<Entities>(this, AccessType.Immutable);
             
             if (Find(entity.Index >> MemoryAllocator.BlockShift, out Ref<MemoryHandle> handle))
             {

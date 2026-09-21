@@ -18,7 +18,7 @@ namespace Soe.Threading
         /// <summary>
         /// Gets a number related to the current access order of this policy
         /// </summary>
-        int Order
+        static abstract AccessType Order
         {
             get;
         }
@@ -28,6 +28,6 @@ namespace Soe.Threading
         /// </summary>
         /// <param name="order">An order ID to compare</param>
         /// <returns>True if access conflicts with the provided order ID, false otherwise</returns>
-        bool IsConflicting(int order);
+        static abstract bool IsConflicting(AccessType order);
     }
 }

@@ -11,7 +11,7 @@ namespace Soe.Threading
     #else
     internal
     #endif
-    enum AccessType : int
+    enum AccessType : byte
     {
         /// <summary>
         /// The underlying object is fully mutable and data it's can be changed
@@ -20,6 +20,11 @@ namespace Soe.Threading
         /// <summary>
         /// The underlying object is immutable and can be read or changed in non-lethal ways
         /// </summary>
-        Immutable = 1
+        Immutable = 1,
+        
+        /// <summary>
+        /// An error type, leads to an exception if used
+        /// </summary>
+        Reserved = 0x80
     }
 }

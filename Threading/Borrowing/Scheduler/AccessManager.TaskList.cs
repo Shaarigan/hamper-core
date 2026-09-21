@@ -22,6 +22,16 @@ namespace Soe.Threading
             private SmallArray<TaskNode?, SmallArray4<TaskNode?>> tasks;
             private ConcurrentBuffer<TaskNode> buffer;
             
+            private readonly UInt32 uniqueId;
+            /// <summary>
+            /// 
+            /// </summary>
+            public UInt32 UniqueId
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get { return uniqueId; }
+            }
+            
             private readonly int hash;
             /// <inheritdoc/>
             public int Hash
@@ -59,8 +69,9 @@ namespace Soe.Threading
             /// <param name="hash">The hash code of the object instance</param>
             /// <param name="key">The corresponding object instance</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public TaskList(int hash, object key)
+            public TaskList(UInt32 uniqueId, int hash, object key)
             {
+                this.uniqueId = uniqueId;
                 this.key = key;
                 this.hash = hash;
             }
@@ -76,7 +87,6 @@ namespace Soe.Threading
                 where T : class
                 where Policy : struct, IAccessPolicy
             {
-                Policy policy = default;
                 int index = buffer.Enqueue(ref tasks, task);
                 using (ScopedDisposable.Acquire<ConcurrentBuffer<TaskNode>, ConcurrentBuffer<TaskNode>.SharedOperation>(ref buffer))
                 {
@@ -91,8 +101,14 @@ namespace Soe.Threading
                             // Wait until potential parent is fully initialized to prevent AB problems
                             wait.SpinOnce();
                         }
-                        int order = tasks[i]?.GetOrder<T>() ?? int.MaxValue;
-                        if (policy.IsConflicting(order)) 
+                        AccessType order = tasks[i]?.GetAccess(uniqueId) ?? AccessType.Reserved;
+                        #if DEBUG
+                        if (order >= AccessType.Reserved)
+                        {
+                            throw new ArgumentOutOfRangeException(typeof(T).Name);                            
+                        }
+                        #endif
+                        if (Policy.IsConflicting(order))
                         { 
                             // A task conflicts with the desired access policy, add this as child
                             
@@ -102,7 +118,13 @@ namespace Soe.Threading
                                 // Test if there are other tasks with the same conflict, this needs to wait
                                 // on all of those tasks to complete first
                                 
-                                int nextOrder = tasks[i]?.GetOrder<T>() ?? int.MaxValue;
+                                AccessType nextOrder = tasks[i]?.GetAccess(uniqueId) ?? AccessType.Reserved;
+                                #if DEBUG
+                                if (nextOrder >= AccessType.Reserved)
+                                {
+                                    throw new ArgumentOutOfRangeException(typeof(T).Name);                            
+                                }
+                                #endif
                                 if (order == nextOrder)
                                 {
                                     tasks[i]!.AppendChild(task);

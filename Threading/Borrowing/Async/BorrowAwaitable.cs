@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace Soe.Threading
 {
-    /// <summary>
+    /*/// <summary>
     /// Helper struct to make the scheduler operation awaitable
     /// </summary>
     /// <param name="instance">An object instance to request access to</param>
@@ -30,7 +30,7 @@ namespace Soe.Threading
         {
             return new BorrowAwaiter(AccessManager.BorrowAsync<T, Policy>(instance));
         }
-    }
+    }*/
     
     /// <summary>
     /// Helper struct to make the scheduler operation awaitable
@@ -64,7 +64,7 @@ namespace Soe.Threading
         }
     }
     
-    /// <summary>
+    /*/// <summary>
     /// Helper struct to make the scheduler operation awaitable
     /// </summary>
     /// <param name="i1">An object instance to request access to</param>
@@ -359,5 +359,6 @@ namespace Soe.Threading
         {
             return new BorrowAwaiter(AccessManager.BorrowAsync<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6, T7, Policy7, T8, Policy8>(i1, i2, i3, i4, i5, i6, i7, i8));
         }
-    }
+        
+    }*/
 }

@@ -21,7 +21,7 @@ namespace Soe.Threading
             /// Sets the instance of the access handle to be used by this thread
             /// </summary>
             /// <param name="instance">The access handle managing the current scope</param>
-            public void Initialize(in IAccessHandle instance)
+            public static void Initialize(in IAccessHandle instance)
             {
                 current = instance;
             }
@@ -31,7 +31,7 @@ namespace Soe.Threading
             /// </summary>
             /// <param name="instance">The access handle managing the current scope</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Dispose(in IAccessHandle instance)
+            public static void Dispose(in IAccessHandle instance)
             {
                 current = null;
                 Return(instance);

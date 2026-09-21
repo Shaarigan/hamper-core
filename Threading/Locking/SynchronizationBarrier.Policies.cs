@@ -16,14 +16,14 @@ namespace Soe.Threading
         /// <summary>
         /// A policy that manages begin and end of a shared operation or block
         /// </summary>
-        public struct SharedOperation : IRefScopePolicy<UInt32>
+        public readonly struct SharedOperation : IRefScopePolicy<UInt32>
         {
             /// <summary>
             /// Signals the beginning of a new shared operation or block
             /// </summary>
             /// <param name="parameter">A fixed 32-bit value to use as synchronization bits</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Acquire(ref UInt32 parameter)
+            public static void Acquire(ref UInt32 parameter)
             {
                 BeginSharedOperation(ref parameter);
             }
@@ -33,7 +33,7 @@ namespace Soe.Threading
             /// </summary>
             /// <param name="parameter">A fixed 32-bit value to use as synchronization bits</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Dispose(ref UInt32 parameter)
+            public static void Dispose(ref UInt32 parameter)
             {
                 EndSharedOperation(ref parameter);
             }
@@ -42,7 +42,7 @@ namespace Soe.Threading
         /// <summary>
         /// A policy that manages begin and end of an exclusive operation or block
         /// </summary>
-        public struct ExclusiveOperation : IRefScopePolicy<UInt32>
+        public readonly struct ExclusiveOperation : IRefScopePolicy<UInt32>
         {
             /// <summary>
             /// Signals the beginning of an exclusive operation or block. Shared operations are synchronized before an exclusive
@@ -50,7 +50,7 @@ namespace Soe.Threading
             /// </summary>
             /// <param name="parameter">A fixed 32-bit value to use as synchronization bits</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Acquire(ref UInt32 parameter)
+            public static void Acquire(ref UInt32 parameter)
             {
                 BeginExclusiveOperation(ref parameter);
             }
@@ -60,7 +60,7 @@ namespace Soe.Threading
             /// </summary>
             /// <param name="parameter">A fixed 32-bit value to use as synchronization bits</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Dispose(ref UInt32 parameter)
+            public static void Dispose(ref UInt32 parameter)
             {
                 EndExclusiveOperation(ref parameter);
             }

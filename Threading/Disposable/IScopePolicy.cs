@@ -22,14 +22,14 @@ namespace Soe.Threading
         /// </summary>
         /// <param name="parameter">A value</param>
         [Pure]
-        void Initialize(in T parameter);
+        static abstract void Initialize(in T parameter);
         
         /// <summary>
         /// Performs a deinitialization action based on the provided parameter
         /// </summary>
         /// <param name="parameter">A value</param>
         [Pure]
-        void Dispose(in T parameter);
+        static abstract void Dispose(in T parameter);
         
         // ReSharper restore PureAttributeOnVoidMethod
     }

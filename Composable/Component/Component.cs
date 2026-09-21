@@ -33,7 +33,7 @@ namespace Soe.Composable
             get
             {
                 // Requires at least immutable access when scheduled
-                AccessManager.ThrowOnLessAccessible<Component<T>>(AccessType.Immutable);
+                AccessManager.ThrowOnLessAccessible<Component<T>>(this, AccessType.Immutable);
                 
                 return components.Count;
             }
@@ -53,7 +53,7 @@ namespace Soe.Composable
         public Span<T> AsSpan()
         {
             // Requires at least immutable access when scheduled
-            AccessManager.ThrowOnLessAccessible<Component<T>>(AccessType.Immutable);
+            AccessManager.ThrowOnLessAccessible<Component<T>>(this, AccessType.Immutable);
 
             return components.AsSpan();
         }
@@ -62,7 +62,7 @@ namespace Soe.Composable
         public ReadOnlySpan<EntityId> AsReadOnlySpan()
         {
             // Requires at least immutable access when scheduled
-            AccessManager.ThrowOnLessAccessible<Component<T>>(AccessType.Immutable);
+            AccessManager.ThrowOnLessAccessible<Component<T>>(this, AccessType.Immutable);
 
             return entities.AsReadOnlySpan();
         }
@@ -78,7 +78,7 @@ namespace Soe.Composable
             if(entity.ShardId == shard.Id)
             {
                 // Requires mutable access when scheduled
-                AccessManager.ThrowOnAccessViolation<Component<T>>(AccessType.Mutable);
+                AccessManager.ThrowOnAccessViolation<Component<T>>(this, AccessType.Mutable);
                 IMemoryAllocator allocator = shard;
                 
                 int slot = entity.Index >> MemoryAllocator.BlockShift;
@@ -140,7 +140,7 @@ namespace Soe.Composable
         internal int IndexOf(EntityId entity)
         {
             // Requires mutable access when scheduled
-            AccessManager.ThrowOnLessAccessible<Component<T>>(AccessType.Immutable);
+            AccessManager.ThrowOnLessAccessible<Component<T>>(this, AccessType.Immutable);
             
             if (Find(entity.Index >> MemoryAllocator.BlockShift, out _, out _, out Ref<MemoryHandle> handle))
             {
@@ -160,7 +160,7 @@ namespace Soe.Composable
         public bool Remove(EntityId entity)
         {
             // Requires mutable access when scheduled
-            AccessManager.ThrowOnAccessViolation<Component<T>>(AccessType.Mutable);
+            AccessManager.ThrowOnAccessViolation<Component<T>>(this, AccessType.Mutable);
             
             if (Find(entity.Index, out _, out _, out Ref<MemoryHandle> handle))
             {
@@ -213,7 +213,7 @@ namespace Soe.Composable
         internal bool Swap(int source, int target)
         {
             // Requires mutable access when scheduled
-            AccessManager.ThrowOnAccessViolation<Component<T>>(AccessType.Mutable);
+            AccessManager.ThrowOnAccessViolation<Component<T>>(this, AccessType.Mutable);
             
             if (Swap(entities[source], entities[target]))
             {
@@ -249,7 +249,7 @@ namespace Soe.Composable
         public bool TryGet(EntityId entity, out Ref<T> result)
         {
             // Requires at least immutable access when scheduled
-            AccessManager.ThrowOnLessAccessible<Component<T>>(AccessType.Immutable);
+            AccessManager.ThrowOnLessAccessible<Component<T>>(this, AccessType.Immutable);
             
             if (Find(entity.Index >> MemoryAllocator.BlockShift, out _, out _, out Ref<MemoryHandle> handle))
             {

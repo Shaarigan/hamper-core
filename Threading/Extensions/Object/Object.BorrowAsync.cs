@@ -15,7 +15,7 @@ namespace Soe.Threading
     {
         // ReSharper disable InvalidXmlDocComment
         
-        /// <summary>
+        /*/// <summary>
         /// Requests access to the provided object instance and awaits execution to be scheduled
         /// </summary>
         /// <typeparam name="T">An instance type to get access</typeparam>
@@ -43,7 +43,7 @@ namespace Soe.Threading
             where Policy : struct, IAccessPolicy
         {
             return BorrowAsync<T, Policy>(instance);
-        }
+        }*/
         
         // ReSharper restore InvalidXmlDocComment
     }

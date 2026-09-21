@@ -16,13 +16,13 @@ namespace Soe.Threading
         /// <summary>
         /// A policy that manages begin and end of an exclusive operation or block
         /// </summary>
-        public struct LockOperation : IRefScopePolicy<UInt32>
+        public readonly struct LockOperation : IRefScopePolicy<UInt32>
         {
             /// <summary>
             /// Signals the beginning of an exclusive operation or block
             /// </summary>
             /// <param name="parameter">A fixed 32-bit value to use as synchronization bits</param>
-            public void Acquire(ref UInt32 parameter)
+            public static void Acquire(ref UInt32 parameter)
             {
                 Lock(ref parameter);
             }
@@ -31,7 +31,7 @@ namespace Soe.Threading
             /// Signals the end of an exclusive operation or block
             /// </summary>
             /// <param name="parameter">A fixed 32-bit value to use as synchronization bits</param>
-            public void Dispose(ref UInt32 parameter)
+            public static void Dispose(ref UInt32 parameter)
             {
                 Release(ref parameter);
             }

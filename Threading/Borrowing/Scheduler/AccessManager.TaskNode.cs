@@ -33,9 +33,19 @@ namespace Soe.Threading
             SmallArray<TaskNode?, SmallArray4<TaskNode?>> array;
             ConcurrentBuffer<TaskNode> children;
 
-            private FixedArray<object?, FixedArray8<object?>> instances;
-            private ReleaseDependenciesDelegate? releaseDependencies;
-            private GetOrderDelegate? getOrder;
+            private InstanceArray instances;
+            
+            private int root;
+            /// <summary>
+            /// 
+            /// </summary>
+            public int Root
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get { return root; }
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                set { root = value; }
+            }
             
             TaskCompletionSource<IAccessHandle>? signal;
 
@@ -75,20 +85,14 @@ namespace Soe.Threading
             /// <summary>
             /// Prepares this task to be appended into an access graph
             /// </summary>
-            /// <param name="getOrder">A method to determine the order of a certain access policy, related
-            /// to the underlying access pattern</param>
-            /// <param name="releaseDependencies">A method to release dependencies of this task, related
-            /// to the underlying access pattern</param>
             /// <returns>A memory object to set the object instances this task accesses</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Span<object?> Initialize(GetOrderDelegate getOrder, ReleaseDependenciesDelegate releaseDependencies)
+            public ref InstanceArray Initialize()
             {
                 this.state = (int)TaskNodeState.Created;
                 this.signal = new TaskCompletionSource<IAccessHandle>();
-                this.getOrder = getOrder;
-                this.releaseDependencies = releaseDependencies;
 
-                return instances.AsSpan();
+                return ref instances;
             }
             
             // ReSharper restore ParameterHidesMember
@@ -125,7 +129,14 @@ namespace Soe.Threading
             public int Finish<Accessor>(ref Accessor dispatchableNodes)
                 where Accessor : IArrayAccessor<TaskNode>
             {
-                releaseDependencies!(instances.AsSpan(), this);
+                // Remove from dependencies
+                int index = DependencyTree.First(ref instances, root);
+                do
+                {
+                    instances[index].Delegate(instances[index].Instance, this);
+                    index = DependencyTree.Next(ref instances, index);
+                }
+                while(index != DependencyTreeNode.Empty);
                 
                 Volatile.Write(ref state, (int)TaskNodeState.Completed);
                 using(ScopedDisposable.Acquire<ConcurrentBuffer<TaskNode>, ConcurrentBuffer<TaskNode>.ExclusiveOperation>(ref children))
@@ -151,32 +162,27 @@ namespace Soe.Threading
                         }
                     }
                     children.Reset();
-                    instances.Clear();
+                    instances = default;
                     array.Clear();
                     array.Resize(0);
                     
                     return nodeCount;
                 }
             }
-
-            /// <summary>
-            /// Gets a number related to the current access order of the provided object
-            /// </summary>
-            /// <typeparam name="T">An object this task is handling access to</typeparam>
-            /// <returns>The corresponding order ID</returns>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int GetOrder<T>()
-                where T : class
-            {
-                return getOrder!(typeof(T));
-            }
             
             /// <inheritdoc/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public AccessType GetAccess<T>()
-                where T : class
+            public AccessType GetAccess(UInt32 uniqueId)
             {
-                return (AccessType)GetOrder<T>();
+                if (DependencyTree.Find(ref instances, uniqueId, root, out _, out Ref<DependencyTreeNode> result))
+                {
+                    // ReSharper disable BitwiseOperatorOnEnumWithoutFlags
+                    
+                    return (AccessType)result.Value.Flags & ~AccessType.Reserved;
+                    
+                    // ReSharper restore BitwiseOperatorOnEnumWithoutFlags
+                }
+                else return AccessType.Reserved;
             }
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

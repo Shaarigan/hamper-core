@@ -15,14 +15,14 @@ namespace Soe.Threading
         /// <summary>
         /// A policy that manages begin and end of a shared operation or block
         /// </summary>
-        public struct SharedOperation : IRefScopePolicy<ConcurrentBuffer<T>>
+        public readonly struct SharedOperation : IRefScopePolicy<ConcurrentBuffer<T>>
         {
             /// <summary>
             /// Signals the beginning of a new shared operation or block
             /// </summary>
             /// <param name="parameter">A concurrent container instance</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Acquire(ref ConcurrentBuffer<T> parameter)
+            public static void Acquire(ref ConcurrentBuffer<T> parameter)
             {
                 SynchronizationBarrier.BeginSharedOperation(ref parameter.lockVariable);
             }
@@ -32,7 +32,7 @@ namespace Soe.Threading
             /// </summary>
             /// <param name="parameter">A concurrent container instance</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Dispose(ref ConcurrentBuffer<T> parameter)
+            public static void Dispose(ref ConcurrentBuffer<T> parameter)
             {
                 SynchronizationBarrier.EndSharedOperation(ref parameter.lockVariable);
             }
@@ -41,7 +41,7 @@ namespace Soe.Threading
         /// <summary>
         /// A policy that manages begin and end of an exclusive operation or block
         /// </summary>
-        public struct ExclusiveOperation : IRefScopePolicy<ConcurrentBuffer<T>>
+        public readonly struct ExclusiveOperation : IRefScopePolicy<ConcurrentBuffer<T>>
         {
             /// <summary>
             /// Signals the beginning of an exclusive operation or block. Shared operations are synchronized before an exclusive
@@ -49,7 +49,7 @@ namespace Soe.Threading
             /// </summary>
             /// <param name="parameter">A concurrent container instance</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Acquire(ref ConcurrentBuffer<T> parameter)
+            public static void Acquire(ref ConcurrentBuffer<T> parameter)
             {
                 SynchronizationBarrier.BeginExclusiveOperation(ref parameter.lockVariable);
             }
@@ -59,7 +59,7 @@ namespace Soe.Threading
             /// </summary>
             /// <param name="parameter">A concurrent container instance</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Dispose(ref ConcurrentBuffer<T> parameter)
+            public static void Dispose(ref ConcurrentBuffer<T> parameter)
             {
                 SynchronizationBarrier.EndExclusiveOperation(ref parameter.lockVariable);
             }

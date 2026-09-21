@@ -40,22 +40,9 @@ namespace Soe.Composable
             component2?.ReleaseGroup(this);
         }
 
-        void OnComponentAdded(int index1, int index2)
-        {
-            if (index1 >= 0 && index2 >= 0)
-            {
-                int targetIndex = Math.Min(index1, index2);
-                targetIndex = Math.Min(targetIndex, count);
-                
-                ConditionalMove(component1!, index1, targetIndex);
-                ConditionalMove(component2!, index2, targetIndex);
-                
-                count++;
-            }
-        }
-
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void ConditionalMove<T>(Component<T> component, int index, int targetIndex)
+        void ConditionalMove<T>(Component<T> component, int index)
             where T : struct
         {
             if (index > count)
@@ -65,11 +52,6 @@ namespace Soe.Composable
                     index = count;
                 }
                 else throw new InvalidOperationException();
-            }
-            if (index != targetIndex)
-            {
-                if(!component.Swap(index, targetIndex))
-                    throw new InvalidOperationException();
             }
         }
 
@@ -82,19 +64,21 @@ namespace Soe.Composable
         }
 
         #region IComponentGroup Members
+
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void IComponentGroup.ComponentAdded<T>(EntityId entity, ref int index)
         {
             if (typeof(T) == typeof(T1))
             {
-                OnComponentAdded(index, component2?.IndexOf(entity) ?? -1);
+                
             }
             else if (typeof(T) == typeof(T2))
             {
-                OnComponentAdded(component1?.IndexOf(entity) ?? -1, index);
+                
             }
         }
+
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void IComponentGroup.ComponentRemoved<T>(EntityId entity, ref int index)

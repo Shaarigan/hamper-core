@@ -19,7 +19,7 @@ namespace Soe.Threading
         /// Acquires a certain state based on the provided parameter
         /// </summary>
         /// <param name="parameter">A reference value</param>
-        void Acquire(ref T parameter);
+        static abstract void Acquire(ref T parameter);
         
         // ReSharper disable PureAttributeOnVoidMethod
         
@@ -28,7 +28,7 @@ namespace Soe.Threading
         /// </summary>
         /// <param name="parameter">A reference value</param>
         [Pure]
-        void Dispose(ref T parameter);
+        static abstract void Dispose(ref T parameter);
         
         // ReSharper restore PureAttributeOnVoidMethod
     }

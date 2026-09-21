@@ -114,7 +114,7 @@ namespace Soe.Collections.HashSet
         public ref Container Emplace(in T key, int hash, int index, int distance, int currentVersion)
         {
         Head:
-            if (version == currentVersion || !Find(key, hash, out index, out distance, out Ref<Container> result))
+            if (version == currentVersion || !Find(in key, hash, out index, out distance, out Ref<Container> result))
             {
                 if (items == null || count >= items.Length * loadFactor)
                 {
@@ -136,7 +136,7 @@ namespace Soe.Collections.HashSet
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref Container Emplace(in T key, int hash)
         {
-            return ref Emplace(key, hash, 0, 0, version + 1);
+            return ref Emplace(in key, hash, 0, 0, version + 1);
         }
         int Emplace(int index, int distance)
         {
@@ -269,6 +269,44 @@ namespace Soe.Collections.HashSet
         void Swap(ref Container lhs, ref Container rhs)
         {
             (lhs, rhs) = (rhs, lhs);
+        }
+
+        /// <summary>
+        /// Removes an element by its key index
+        /// </summary>
+        /// <param name="key">The element to remove</param>
+        /// <param name="hash">The hash code of the element to remove</param>
+        /// <param name="index">The last index of the element to remove</param>
+        /// <returns>True if the element was successfully removed, false otherwise</returns>
+        public bool Remove(in T key, int hash, int index)
+        {
+            for (int i = 0, next = ((index + 1) & moduloMask); i < items!.Length; i++, index = ((index + 1) & moduloMask), next = ((next + 1) & moduloMask))
+            {
+                if (!items[next].IsValid || GetDistance(next) == 0)
+                {
+                    items[index] = default;
+                    count--;
+
+                    return true;
+                }
+                Swap(ref items[index], ref items[next]);
+            }
+            return false;
+        }
+        /// <summary>
+        /// Removes an element by its key index
+        /// </summary>
+        /// <param name="key">The element to remove</param>
+        /// <param name="hash">The hash code of the element to remove</param>
+        /// <returns>True if the element was successfully removed, false otherwise</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Remove(in T key, int hash)
+        {
+            if (Find(in key, hash, out int index, out _, out _))
+            {
+                return Remove(in key, hash, index);
+            }
+            else return false;
         }
         
         /// <summary>

@@ -17,15 +17,15 @@ namespace Soe.Threading
     readonly struct MutablePolicy : IAccessPolicy
     {
         /// <inheritdoc/>
-        public int Order
+        public static AccessType Order
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return (int)AccessType.Mutable; }
+            get { return AccessType.Mutable; }
         }
         
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsConflicting(int order)
+        public static bool IsConflicting(AccessType order)
         {
             return true;
         }

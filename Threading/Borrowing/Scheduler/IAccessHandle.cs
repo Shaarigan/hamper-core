@@ -13,12 +13,7 @@ namespace Soe.Threading
     #endif
     interface IAccessHandle
     {
-        /// <summary>
-        /// Gets the permission related to the current access of the provided object
-        /// </summary>
-        /// <typeparam name="T">An object this handle is managing</typeparam>
-        /// <returns>The corresponding permission</returns>
-        public AccessType GetAccess<T>()
-            where T : class;
+
+        public AccessType GetAccess(UInt32 uniqueId);
     }
 }
