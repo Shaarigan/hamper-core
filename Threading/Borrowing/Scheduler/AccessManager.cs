@@ -3,8 +3,6 @@
 
 using System.Buffers;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Soe.Collections.Inline;
 
 namespace Soe.Threading
 {
@@ -18,9 +16,55 @@ namespace Soe.Threading
     #endif
     static partial class AccessManager
     {
+        /// <summary>
+        /// Proxy to create <see cref="DependencyTreeResolver"/> instances without exposing embedded types
+        /// </summary>
+        delegate DependencyTreeResolver CreateInstanceDelegate(DependencyTreeNode[] array, ref DependencyTree tree);
+        
         [ThreadStatic]
         private static IAccessHandle? current;
+        private static CreateInstanceDelegate? CreateResolver;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static AccessManager()
+        {
+            typeof(DependencyTreeResolver).Initialize();
+        }
         
+        /// <summary>
+        /// Schedules access to the provided instances according to the desired access policies
+        /// </summary>
+        /// <param name="instance">An instance to get access</param>
+        /// <typeparam name="T">An instance type to get access</typeparam>
+        /// <typeparam name="Policy">The access policy for this instance type</typeparam>
+        /// <returns>The task object representing the asynchronous operation</returns>
+        public static Task<IAccessHandle> BorrowAsync<T, Policy>(T instance)
+            where T : class
+            where Policy : struct, IAccessPolicy
+        {
+            TaskNode node = GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Rent();
+            DependencyTreeNode[] array = node.BeginInitialize();
+            DependencyTree tree = default;
+            
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T, Policy>(instance);
+
+            Resolve(resolver, instance);
+            
+            node.Root = tree.Root;
+            int index = tree.Begin(array);
+            do
+            {
+                array[index].Delegate = array[index].Delegate(array[index].Instance, node)!;
+                index = DependencyTree.Next(array, index);
+            }
+            while(index != DependencyTreeNode.Empty);
+            if (node.EndInitialize())
+            {
+                node.SignalNode();
+            }
+            return node;
+        }
         /// <summary>
         /// Schedules access to the provided instances according to the desired access policies
         /// </summary>
@@ -38,40 +82,425 @@ namespace Soe.Threading
             where Policy2 : struct, IAccessPolicy
         {
             TaskNode node = GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Rent();
-            ref InstanceArray array = ref node.Initialize();
-            
+            DependencyTreeNode[] array = node.BeginInitialize();
             DependencyTree tree = default;
             
-            // ReSharper disable BitwiseOperatorOnEnumWithoutFlags
-            
-            ref DependencyTreeNode tn = ref tree.Emplace(ref array, Dependency<T1>.GetUniqueId(i1));
-            tn.Flags |= (byte)(Policy1.Order & ~AccessType.Reserved);
-            tn.Delegate = Append<T1, Policy1>;
-            tn.Instance = i1;
-            
-            tn = ref tree.Emplace(ref array, Dependency<T2>.GetUniqueId(i2));
-            tn.Flags |= (byte)(Policy2.Order & ~AccessType.Reserved);
-            tn.Delegate = Append<T2, Policy2>;
-            tn.Instance = i2;
-            
-            // ReSharper restore BitwiseOperatorOnEnumWithoutFlags
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(i1);
+            resolver.Add<T2, Policy2>(i2);
 
+            Resolve(resolver, i1);
+            Resolve(resolver, i2);
+            
             node.Root = tree.Root;
-            int index = tree.First(ref array);
+            int index = tree.Begin(array);
             do
             {
                 array[index].Delegate = array[index].Delegate(array[index].Instance, node)!;
-                index = DependencyTree.Next(ref array, index);
+                index = DependencyTree.Next(array, index);
             }
             while(index != DependencyTreeNode.Empty);
-            if (node.DependencyCount == 0)
+            if (node.EndInitialize())
             {
                 node.SignalNode();
             }
-            else node.SetInitialized();
             return node;
         }
-
+        /// <summary>
+        /// Schedules access to the provided instances according to the desired access policies
+        /// </summary>
+        /// <param name="i1">An instance to get access</param>
+        /// <param name="i2">An instance to get access</param>
+        /// <param name="i3">An instance to get access</param>
+        /// <typeparam name="T1">An instance type to get access</typeparam>
+        /// <typeparam name="Policy1">The access policy for this instance type</typeparam>
+        /// <typeparam name="T2">An instance type to get access</typeparam>
+        /// <typeparam name="Policy2">The access policy for this instance type</typeparam>
+        /// <typeparam name="T3">An instance type to get access</typeparam>
+        /// <typeparam name="Policy3">The access policy for this instance type</typeparam>
+        /// <returns>The task object representing the asynchronous operation</returns>
+        public static Task<IAccessHandle> BorrowAsync<T1, Policy1, T2, Policy2, T3, Policy3>(T1 i1, T2 i2, T3 i3)
+            where T1 : class
+            where T2 : class
+            where T3 : class
+            where Policy1 : struct, IAccessPolicy
+            where Policy2 : struct, IAccessPolicy
+            where Policy3 : struct, IAccessPolicy
+        {
+            TaskNode node = GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Rent();
+            DependencyTreeNode[] array = node.BeginInitialize();
+            DependencyTree tree = default;
+            
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(i1);
+            resolver.Add<T2, Policy2>(i2);
+            resolver.Add<T3, Policy3>(i3);
+            
+            Resolve(resolver, i1);
+            Resolve(resolver, i2);
+            Resolve(resolver, i3);
+            
+            node.Root = tree.Root;
+            int index = tree.Begin(array);
+            do
+            {
+                array[index].Delegate = array[index].Delegate(array[index].Instance, node)!;
+                index = DependencyTree.Next(array, index);
+            }
+            while(index != DependencyTreeNode.Empty);
+            if (node.EndInitialize())
+            {
+                node.SignalNode();
+            }
+            return node;
+        }
+        /// <summary>
+        /// Schedules access to the provided instances according to the desired access policies
+        /// </summary>
+        /// <param name="i1">An instance to get access</param>
+        /// <param name="i2">An instance to get access</param>
+        /// <param name="i3">An instance to get access</param>
+        /// <param name="i4">An instance to get access</param>
+        /// <typeparam name="T1">An instance type to get access</typeparam>
+        /// <typeparam name="Policy1">The access policy for this instance type</typeparam>
+        /// <typeparam name="T2">An instance type to get access</typeparam>
+        /// <typeparam name="Policy2">The access policy for this instance type</typeparam>
+        /// <typeparam name="T3">An instance type to get access</typeparam>
+        /// <typeparam name="Policy3">The access policy for this instance type</typeparam>
+        /// <typeparam name="T4">An instance type to get access</typeparam>
+        /// <typeparam name="Policy4">The access policy for this instance type</typeparam>
+        /// <returns>The task object representing the asynchronous operation</returns>
+        public static Task<IAccessHandle> BorrowAsync<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4>(T1 i1, T2 i2, T3 i3, T4 i4)
+            where T1 : class
+            where T2 : class
+            where T3 : class
+            where T4 : class
+            where Policy1 : struct, IAccessPolicy
+            where Policy2 : struct, IAccessPolicy
+            where Policy3 : struct, IAccessPolicy
+            where Policy4 : struct, IAccessPolicy
+        {
+            TaskNode node = GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Rent();
+            DependencyTreeNode[] array = node.BeginInitialize();
+            DependencyTree tree = default;
+            
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(i1);
+            resolver.Add<T2, Policy2>(i2);
+            resolver.Add<T3, Policy3>(i3);
+            resolver.Add<T4, Policy4>(i4);
+            
+            Resolve(resolver, i1);
+            Resolve(resolver, i2);
+            Resolve(resolver, i3);
+            Resolve(resolver, i4);
+            
+            node.Root = tree.Root;
+            int index = tree.Begin(array);
+            do
+            {
+                array[index].Delegate = array[index].Delegate(array[index].Instance, node)!;
+                index = DependencyTree.Next(array, index);
+            }
+            while(index != DependencyTreeNode.Empty);
+            if (node.EndInitialize())
+            {
+                node.SignalNode();
+            }
+            return node;
+        }
+        /// <summary>
+        /// Schedules access to the provided instances according to the desired access policies
+        /// </summary>
+        /// <param name="i1">An instance to get access</param>
+        /// <param name="i2">An instance to get access</param>
+        /// <param name="i3">An instance to get access</param>
+        /// <param name="i4">An instance to get access</param>
+        /// <param name="i5">An instance to get access</param>
+        /// <typeparam name="T1">An instance type to get access</typeparam>
+        /// <typeparam name="Policy1">The access policy for this instance type</typeparam>
+        /// <typeparam name="T2">An instance type to get access</typeparam>
+        /// <typeparam name="Policy2">The access policy for this instance type</typeparam>
+        /// <typeparam name="T3">An instance type to get access</typeparam>
+        /// <typeparam name="Policy3">The access policy for this instance type</typeparam>
+        /// <typeparam name="T4">An instance type to get access</typeparam>
+        /// <typeparam name="Policy4">The access policy for this instance type</typeparam>
+        /// <typeparam name="T5">An instance type to get access</typeparam>
+        /// <typeparam name="Policy5">The access policy for this instance type</typeparam>
+        /// <returns>The task object representing the asynchronous operation</returns>
+        public static Task<IAccessHandle> BorrowAsync<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5>(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5)
+            where T1 : class
+            where T2 : class
+            where T3 : class
+            where T4 : class
+            where T5 : class
+            where Policy1 : struct, IAccessPolicy
+            where Policy2 : struct, IAccessPolicy
+            where Policy3 : struct, IAccessPolicy
+            where Policy4 : struct, IAccessPolicy
+            where Policy5 : struct, IAccessPolicy
+        {
+            TaskNode node = GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Rent();
+            DependencyTreeNode[] array = node.BeginInitialize();
+            DependencyTree tree = default;
+            
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(i1);
+            resolver.Add<T2, Policy2>(i2);
+            resolver.Add<T3, Policy3>(i3);
+            resolver.Add<T4, Policy4>(i4);
+            resolver.Add<T5, Policy5>(i5);
+            
+            Resolve(resolver, i1);
+            Resolve(resolver, i2);
+            Resolve(resolver, i3);
+            Resolve(resolver, i4);
+            Resolve(resolver, i5);
+            
+            node.Root = tree.Root;
+            int index = tree.Begin(array);
+            do
+            {
+                array[index].Delegate = array[index].Delegate(array[index].Instance, node)!;
+                index = DependencyTree.Next(array, index);
+            }
+            while(index != DependencyTreeNode.Empty);
+            if (node.EndInitialize())
+            {
+                node.SignalNode();
+            }
+            return node;
+        }
+        /// <summary>
+        /// Schedules access to the provided instances according to the desired access policies
+        /// </summary>
+        /// <param name="i1">An instance to get access</param>
+        /// <param name="i2">An instance to get access</param>
+        /// <param name="i3">An instance to get access</param>
+        /// <param name="i4">An instance to get access</param>
+        /// <param name="i5">An instance to get access</param>
+        /// <param name="i6">An instance to get access</param>
+        /// <typeparam name="T1">An instance type to get access</typeparam>
+        /// <typeparam name="Policy1">The access policy for this instance type</typeparam>
+        /// <typeparam name="T2">An instance type to get access</typeparam>
+        /// <typeparam name="Policy2">The access policy for this instance type</typeparam>
+        /// <typeparam name="T3">An instance type to get access</typeparam>
+        /// <typeparam name="Policy3">The access policy for this instance type</typeparam>
+        /// <typeparam name="T4">An instance type to get access</typeparam>
+        /// <typeparam name="Policy4">The access policy for this instance type</typeparam>
+        /// <typeparam name="T5">An instance type to get access</typeparam>
+        /// <typeparam name="Policy5">The access policy for this instance type</typeparam>
+        /// <typeparam name="T6">An instance type to get access</typeparam>
+        /// <typeparam name="Policy6">The access policy for this instance type</typeparam>
+        /// <returns>The task object representing the asynchronous operation</returns>
+        public static Task<IAccessHandle> BorrowAsync<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6>(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5, T6 i6)
+            where T1 : class
+            where T2 : class
+            where T3 : class
+            where T4 : class
+            where T5 : class
+            where T6 : class
+            where Policy1 : struct, IAccessPolicy
+            where Policy2 : struct, IAccessPolicy
+            where Policy3 : struct, IAccessPolicy
+            where Policy4 : struct, IAccessPolicy
+            where Policy5 : struct, IAccessPolicy
+            where Policy6 : struct, IAccessPolicy
+        {
+            TaskNode node = GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Rent();
+            DependencyTreeNode[] array = node.BeginInitialize();
+            DependencyTree tree = default;
+            
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(i1);
+            resolver.Add<T2, Policy2>(i2);
+            resolver.Add<T3, Policy3>(i3);
+            resolver.Add<T4, Policy4>(i4);
+            resolver.Add<T5, Policy5>(i5);
+            resolver.Add<T6, Policy6>(i6);
+            
+            Resolve(resolver, i1);
+            Resolve(resolver, i2);
+            Resolve(resolver, i3);
+            Resolve(resolver, i4);
+            Resolve(resolver, i5);
+            Resolve(resolver, i6);
+            
+            node.Root = tree.Root;
+            int index = tree.Begin(array);
+            do
+            {
+                array[index].Delegate = array[index].Delegate(array[index].Instance, node)!;
+                index = DependencyTree.Next(array, index);
+            }
+            while(index != DependencyTreeNode.Empty);
+            if (node.EndInitialize())
+            {
+                node.SignalNode();
+            }
+            return node;
+        }
+        /// <summary>
+        /// Schedules access to the provided instances according to the desired access policies
+        /// </summary>
+        /// <param name="i1">An instance to get access</param>
+        /// <param name="i2">An instance to get access</param>
+        /// <param name="i3">An instance to get access</param>
+        /// <param name="i4">An instance to get access</param>
+        /// <param name="i5">An instance to get access</param>
+        /// <param name="i6">An instance to get access</param>
+        /// <param name="i7">An instance to get access</param>
+        /// <param name="i8">An instance to get access</param>
+        /// <typeparam name="T1">An instance type to get access</typeparam>
+        /// <typeparam name="Policy1">The access policy for this instance type</typeparam>
+        /// <typeparam name="T2">An instance type to get access</typeparam>
+        /// <typeparam name="Policy2">The access policy for this instance type</typeparam>
+        /// <typeparam name="T3">An instance type to get access</typeparam>
+        /// <typeparam name="Policy3">The access policy for this instance type</typeparam>
+        /// <typeparam name="T4">An instance type to get access</typeparam>
+        /// <typeparam name="Policy4">The access policy for this instance type</typeparam>
+        /// <typeparam name="T5">An instance type to get access</typeparam>
+        /// <typeparam name="Policy5">The access policy for this instance type</typeparam>
+        /// <typeparam name="T6">An instance type to get access</typeparam>
+        /// <typeparam name="Policy6">The access policy for this instance type</typeparam>
+        /// <typeparam name="T7">An instance type to get access</typeparam>
+        /// <typeparam name="Policy7">The access policy for this instance type</typeparam>
+        /// <returns>The task object representing the asynchronous operation</returns>
+        public static Task<IAccessHandle> BorrowAsync<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6, T7, Policy7>(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5, T6 i6, T7 i7)
+            where T1 : class
+            where T2 : class
+            where T3 : class
+            where T4 : class
+            where T5 : class
+            where T6 : class
+            where T7 : class
+            where Policy1 : struct, IAccessPolicy
+            where Policy2 : struct, IAccessPolicy
+            where Policy3 : struct, IAccessPolicy
+            where Policy4 : struct, IAccessPolicy
+            where Policy5 : struct, IAccessPolicy
+            where Policy6 : struct, IAccessPolicy
+            where Policy7 : struct, IAccessPolicy
+        {
+            TaskNode node = GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Rent();
+            DependencyTreeNode[] array = node.BeginInitialize();
+            DependencyTree tree = default;
+            
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(i1);
+            resolver.Add<T2, Policy2>(i2);
+            resolver.Add<T3, Policy3>(i3);
+            resolver.Add<T4, Policy4>(i4);
+            resolver.Add<T5, Policy5>(i5);
+            resolver.Add<T6, Policy6>(i6);
+            resolver.Add<T7, Policy7>(i7);
+            
+            Resolve(resolver, i1);
+            Resolve(resolver, i2);
+            Resolve(resolver, i3);
+            Resolve(resolver, i4);
+            Resolve(resolver, i5);
+            Resolve(resolver, i6);
+            Resolve(resolver, i7);
+            
+            node.Root = tree.Root;
+            int index = tree.Begin(array);
+            do
+            {
+                array[index].Delegate = array[index].Delegate(array[index].Instance, node)!;
+                index = DependencyTree.Next(array, index);
+            }
+            while(index != DependencyTreeNode.Empty);
+            if (node.EndInitialize())
+            {
+                node.SignalNode();
+            }
+            return node;
+        }
+        /// <summary>
+        /// Schedules access to the provided instances according to the desired access policies
+        /// </summary>
+        /// <param name="i1">An instance to get access</param>
+        /// <param name="i2">An instance to get access</param>
+        /// <param name="i3">An instance to get access</param>
+        /// <param name="i4">An instance to get access</param>
+        /// <param name="i5">An instance to get access</param>
+        /// <param name="i6">An instance to get access</param>
+        /// <param name="i7">An instance to get access</param>
+        /// <param name="i8">An instance to get access</param>
+        /// <typeparam name="T1">An instance type to get access</typeparam>
+        /// <typeparam name="Policy1">The access policy for this instance type</typeparam>
+        /// <typeparam name="T2">An instance type to get access</typeparam>
+        /// <typeparam name="Policy2">The access policy for this instance type</typeparam>
+        /// <typeparam name="T3">An instance type to get access</typeparam>
+        /// <typeparam name="Policy3">The access policy for this instance type</typeparam>
+        /// <typeparam name="T4">An instance type to get access</typeparam>
+        /// <typeparam name="Policy4">The access policy for this instance type</typeparam>
+        /// <typeparam name="T5">An instance type to get access</typeparam>
+        /// <typeparam name="Policy5">The access policy for this instance type</typeparam>
+        /// <typeparam name="T6">An instance type to get access</typeparam>
+        /// <typeparam name="Policy6">The access policy for this instance type</typeparam>
+        /// <typeparam name="T7">An instance type to get access</typeparam>
+        /// <typeparam name="Policy7">The access policy for this instance type</typeparam>
+        /// <typeparam name="T8">An instance type to get access</typeparam>
+        /// <typeparam name="Policy8">The access policy for this instance type</typeparam>
+        /// <returns>The task object representing the asynchronous operation</returns>
+        public static Task<IAccessHandle> BorrowAsync<T1, Policy1, T2, Policy2, T3, Policy3, T4, Policy4, T5, Policy5, T6, Policy6, T7, Policy7, T8, Policy8>(T1 i1, T2 i2, T3 i3, T4 i4, T5 i5, T6 i6, T7 i7, T8 i8)
+            where T1 : class
+            where T2 : class
+            where T3 : class
+            where T4 : class
+            where T5 : class
+            where T6 : class
+            where T7 : class
+            where T8 : class
+            where Policy1 : struct, IAccessPolicy
+            where Policy2 : struct, IAccessPolicy
+            where Policy3 : struct, IAccessPolicy
+            where Policy4 : struct, IAccessPolicy
+            where Policy5 : struct, IAccessPolicy
+            where Policy6 : struct, IAccessPolicy
+            where Policy7 : struct, IAccessPolicy
+            where Policy8 : struct, IAccessPolicy
+        {
+            TaskNode node = GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Rent();
+            DependencyTreeNode[] array = node.BeginInitialize();
+            DependencyTree tree = default;
+            
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(i1);
+            resolver.Add<T2, Policy2>(i2);
+            resolver.Add<T3, Policy3>(i3);
+            resolver.Add<T4, Policy4>(i4);
+            resolver.Add<T5, Policy5>(i5);
+            resolver.Add<T6, Policy6>(i6);
+            resolver.Add<T7, Policy7>(i7);
+            resolver.Add<T8, Policy8>(i8);
+            
+            Resolve(resolver, i1);
+            Resolve(resolver, i2);
+            Resolve(resolver, i3);
+            Resolve(resolver, i4);
+            Resolve(resolver, i5);
+            Resolve(resolver, i6);
+            Resolve(resolver, i7);
+            Resolve(resolver, i8);
+            
+            node.Root = tree.Root;
+            int index = tree.Begin(array);
+            do
+            {
+                array[index].Delegate = array[index].Delegate(array[index].Instance, node)!;
+                index = DependencyTree.Next(array, index);
+            }
+            while(index != DependencyTreeNode.Empty);
+            if (node.EndInitialize())
+            {
+                node.SignalNode();
+            }
+            return node;
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static DependencyTreeNode.ManagerDelegate? Append<T, Policy>(object? instance, TaskNode node)
             where T : class
@@ -79,14 +508,6 @@ namespace Soe.Threading
         {
             Dependency<T>.Append<Policy>(instance!, node);
             return Remove<T>;
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static DependencyTreeNode.ManagerDelegate? Remove<T>(object? instance, TaskNode node)
-            where T : class
-        {
-            Dependency<T>.Remove(instance, node);
-            return null;
         }
 
         /// <summary>
@@ -98,20 +519,35 @@ namespace Soe.Threading
         {
             return (current != null);
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static DependencyTreeNode.ManagerDelegate? Remove<T>(object? instance, TaskNode node)
+            where T : class
+        {
+            Dependency<T>.Remove(instance, node);
+            return null;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void Return(IAccessHandle handle)
         {
             if (handle is TaskNode task)
             {
-                SmallArray<TaskNode, SmallArray16<TaskNode>> dispatchableNodes = default;
-                for (int i = task.Finish(ref dispatchableNodes) - 1; i >= 0; i--)
-                {
-                    dispatchableNodes[i].SignalNode();
-                }
+                task.Finish();
                 GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Return(task);
             }
             else throw new ArgumentException(nameof(handle));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool Resolve<T>(DependencyTreeResolver resolver, T instance)
+            where T : class
+        {
+            if (instance is IBorrowAnchor anchor)
+            {
+                return anchor.OnNext(resolver);
+            }
+            else return false;
         }
 
         /// <summary>
