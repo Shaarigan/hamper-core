@@ -46,10 +46,12 @@ namespace Soe.Threading
             DependencyTreeNode[] array = node.BeginInitialize();
             DependencyTree tree = default;
             
+            UInt32 uuid = Dependency<T>.GetUniqueId(instance);
+            
             DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
-            resolver.Add<T, Policy>(instance);
-
-            Resolve(resolver, instance);
+            resolver.Add<T, Policy>(uuid, instance);
+            
+            Resolve(resolver, uuid, instance);
             
             node.Root = tree.Root;
             int index = tree.Begin(array);
@@ -85,12 +87,15 @@ namespace Soe.Threading
             DependencyTreeNode[] array = node.BeginInitialize();
             DependencyTree tree = default;
             
+            UInt32 uuid1 = Dependency<T1>.GetUniqueId(i1);
+            UInt32 uuid2 = Dependency<T2>.GetUniqueId(i2);
+            
             DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
-            resolver.Add<T1, Policy1>(i1);
-            resolver.Add<T2, Policy2>(i2);
-
-            Resolve(resolver, i1);
-            Resolve(resolver, i2);
+            resolver.Add<T1, Policy1>(uuid1, i1);
+            resolver.Add<T2, Policy2>(uuid2, i2);
+            
+            Resolve(resolver, uuid1, i1);
+            Resolve(resolver, uuid2, i2);
             
             node.Root = tree.Root;
             int index = tree.Begin(array);
@@ -131,14 +136,18 @@ namespace Soe.Threading
             DependencyTreeNode[] array = node.BeginInitialize();
             DependencyTree tree = default;
             
-            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
-            resolver.Add<T1, Policy1>(i1);
-            resolver.Add<T2, Policy2>(i2);
-            resolver.Add<T3, Policy3>(i3);
+            UInt32 uuid1 = Dependency<T1>.GetUniqueId(i1);
+            UInt32 uuid2 = Dependency<T2>.GetUniqueId(i2);
+            UInt32 uuid3 = Dependency<T3>.GetUniqueId(i3);
             
-            Resolve(resolver, i1);
-            Resolve(resolver, i2);
-            Resolve(resolver, i3);
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(uuid1, i1);
+            resolver.Add<T2, Policy2>(uuid2, i2);
+            resolver.Add<T3, Policy3>(uuid3, i3);
+            
+            Resolve(resolver, uuid1, i1);
+            Resolve(resolver, uuid2, i2);
+            Resolve(resolver, uuid3, i3);
             
             node.Root = tree.Root;
             int index = tree.Begin(array);
@@ -184,16 +193,21 @@ namespace Soe.Threading
             DependencyTreeNode[] array = node.BeginInitialize();
             DependencyTree tree = default;
             
-            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
-            resolver.Add<T1, Policy1>(i1);
-            resolver.Add<T2, Policy2>(i2);
-            resolver.Add<T3, Policy3>(i3);
-            resolver.Add<T4, Policy4>(i4);
+            UInt32 uuid1 = Dependency<T1>.GetUniqueId(i1);
+            UInt32 uuid2 = Dependency<T2>.GetUniqueId(i2);
+            UInt32 uuid3 = Dependency<T3>.GetUniqueId(i3);
+            UInt32 uuid4 = Dependency<T4>.GetUniqueId(i4);
             
-            Resolve(resolver, i1);
-            Resolve(resolver, i2);
-            Resolve(resolver, i3);
-            Resolve(resolver, i4);
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(uuid1, i1);
+            resolver.Add<T2, Policy2>(uuid2, i2);
+            resolver.Add<T3, Policy3>(uuid3, i3);
+            resolver.Add<T4, Policy4>(uuid4, i4);
+            
+            Resolve(resolver, uuid1, i1);
+            Resolve(resolver, uuid2, i2);
+            Resolve(resolver, uuid3, i3);
+            Resolve(resolver, uuid4, i4);
             
             node.Root = tree.Root;
             int index = tree.Begin(array);
@@ -244,18 +258,24 @@ namespace Soe.Threading
             DependencyTreeNode[] array = node.BeginInitialize();
             DependencyTree tree = default;
             
-            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
-            resolver.Add<T1, Policy1>(i1);
-            resolver.Add<T2, Policy2>(i2);
-            resolver.Add<T3, Policy3>(i3);
-            resolver.Add<T4, Policy4>(i4);
-            resolver.Add<T5, Policy5>(i5);
+            UInt32 uuid1 = Dependency<T1>.GetUniqueId(i1);
+            UInt32 uuid2 = Dependency<T2>.GetUniqueId(i2);
+            UInt32 uuid3 = Dependency<T3>.GetUniqueId(i3);
+            UInt32 uuid4 = Dependency<T4>.GetUniqueId(i4);
+            UInt32 uuid5 = Dependency<T5>.GetUniqueId(i5);
             
-            Resolve(resolver, i1);
-            Resolve(resolver, i2);
-            Resolve(resolver, i3);
-            Resolve(resolver, i4);
-            Resolve(resolver, i5);
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(uuid1, i1);
+            resolver.Add<T2, Policy2>(uuid2, i2);
+            resolver.Add<T3, Policy3>(uuid3, i3);
+            resolver.Add<T4, Policy4>(uuid4, i4);
+            resolver.Add<T5, Policy5>(uuid5, i5);
+            
+            Resolve(resolver, uuid1, i1);
+            Resolve(resolver, uuid2, i2);
+            Resolve(resolver, uuid3, i3);
+            Resolve(resolver, uuid4, i4);
+            Resolve(resolver, uuid5, i5);
             
             node.Root = tree.Root;
             int index = tree.Begin(array);
@@ -311,20 +331,27 @@ namespace Soe.Threading
             DependencyTreeNode[] array = node.BeginInitialize();
             DependencyTree tree = default;
             
-            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
-            resolver.Add<T1, Policy1>(i1);
-            resolver.Add<T2, Policy2>(i2);
-            resolver.Add<T3, Policy3>(i3);
-            resolver.Add<T4, Policy4>(i4);
-            resolver.Add<T5, Policy5>(i5);
-            resolver.Add<T6, Policy6>(i6);
+            UInt32 uuid1 = Dependency<T1>.GetUniqueId(i1);
+            UInt32 uuid2 = Dependency<T2>.GetUniqueId(i2);
+            UInt32 uuid3 = Dependency<T3>.GetUniqueId(i3);
+            UInt32 uuid4 = Dependency<T4>.GetUniqueId(i4);
+            UInt32 uuid5 = Dependency<T5>.GetUniqueId(i5);
+            UInt32 uuid6 = Dependency<T6>.GetUniqueId(i6);
             
-            Resolve(resolver, i1);
-            Resolve(resolver, i2);
-            Resolve(resolver, i3);
-            Resolve(resolver, i4);
-            Resolve(resolver, i5);
-            Resolve(resolver, i6);
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(uuid1, i1);
+            resolver.Add<T2, Policy2>(uuid2, i2);
+            resolver.Add<T3, Policy3>(uuid3, i3);
+            resolver.Add<T4, Policy4>(uuid4, i4);
+            resolver.Add<T5, Policy5>(uuid5, i5);
+            resolver.Add<T6, Policy6>(uuid6, i6);
+            
+            Resolve(resolver, uuid1, i1);
+            Resolve(resolver, uuid2, i2);
+            Resolve(resolver, uuid3, i3);
+            Resolve(resolver, uuid4, i4);
+            Resolve(resolver, uuid5, i5);
+            Resolve(resolver, uuid6, i6);
             
             node.Root = tree.Root;
             int index = tree.Begin(array);
@@ -386,22 +413,30 @@ namespace Soe.Threading
             DependencyTreeNode[] array = node.BeginInitialize();
             DependencyTree tree = default;
             
-            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
-            resolver.Add<T1, Policy1>(i1);
-            resolver.Add<T2, Policy2>(i2);
-            resolver.Add<T3, Policy3>(i3);
-            resolver.Add<T4, Policy4>(i4);
-            resolver.Add<T5, Policy5>(i5);
-            resolver.Add<T6, Policy6>(i6);
-            resolver.Add<T7, Policy7>(i7);
+            UInt32 uuid1 = Dependency<T1>.GetUniqueId(i1);
+            UInt32 uuid2 = Dependency<T2>.GetUniqueId(i2);
+            UInt32 uuid3 = Dependency<T3>.GetUniqueId(i3);
+            UInt32 uuid4 = Dependency<T4>.GetUniqueId(i4);
+            UInt32 uuid5 = Dependency<T5>.GetUniqueId(i5);
+            UInt32 uuid6 = Dependency<T6>.GetUniqueId(i6);
+            UInt32 uuid7 = Dependency<T7>.GetUniqueId(i7);
             
-            Resolve(resolver, i1);
-            Resolve(resolver, i2);
-            Resolve(resolver, i3);
-            Resolve(resolver, i4);
-            Resolve(resolver, i5);
-            Resolve(resolver, i6);
-            Resolve(resolver, i7);
+            DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
+            resolver.Add<T1, Policy1>(uuid1, i1);
+            resolver.Add<T2, Policy2>(uuid2, i2);
+            resolver.Add<T3, Policy3>(uuid3, i3);
+            resolver.Add<T4, Policy4>(uuid4, i4);
+            resolver.Add<T5, Policy5>(uuid5, i5);
+            resolver.Add<T6, Policy6>(uuid6, i6);
+            resolver.Add<T7, Policy7>(uuid7, i7);
+            
+            Resolve(resolver, uuid1, i1);
+            Resolve(resolver, uuid2, i2);
+            Resolve(resolver, uuid3, i3);
+            Resolve(resolver, uuid4, i4);
+            Resolve(resolver, uuid5, i5);
+            Resolve(resolver, uuid6, i6);
+            Resolve(resolver, uuid7, i7);
             
             node.Root = tree.Root;
             int index = tree.Begin(array);
@@ -466,25 +501,34 @@ namespace Soe.Threading
             TaskNode node = GenericPool<TaskNode, GenericPolicy<TaskNode>>.Shared.Rent();
             DependencyTreeNode[] array = node.BeginInitialize();
             DependencyTree tree = default;
+
+            UInt32 uuid1 = Dependency<T1>.GetUniqueId(i1);
+            UInt32 uuid2 = Dependency<T2>.GetUniqueId(i2);
+            UInt32 uuid3 = Dependency<T3>.GetUniqueId(i3);
+            UInt32 uuid4 = Dependency<T4>.GetUniqueId(i4);
+            UInt32 uuid5 = Dependency<T5>.GetUniqueId(i5);
+            UInt32 uuid6 = Dependency<T6>.GetUniqueId(i6);
+            UInt32 uuid7 = Dependency<T7>.GetUniqueId(i7);
+            UInt32 uuid8 = Dependency<T8>.GetUniqueId(i8);
             
             DependencyTreeResolver resolver = CreateResolver!(array, ref tree);
-            resolver.Add<T1, Policy1>(i1);
-            resolver.Add<T2, Policy2>(i2);
-            resolver.Add<T3, Policy3>(i3);
-            resolver.Add<T4, Policy4>(i4);
-            resolver.Add<T5, Policy5>(i5);
-            resolver.Add<T6, Policy6>(i6);
-            resolver.Add<T7, Policy7>(i7);
-            resolver.Add<T8, Policy8>(i8);
+            resolver.Add<T1, Policy1>(uuid1, i1);
+            resolver.Add<T2, Policy2>(uuid2, i2);
+            resolver.Add<T3, Policy3>(uuid3, i3);
+            resolver.Add<T4, Policy4>(uuid4, i4);
+            resolver.Add<T5, Policy5>(uuid5, i5);
+            resolver.Add<T6, Policy6>(uuid6, i6);
+            resolver.Add<T7, Policy7>(uuid7, i7);
+            resolver.Add<T8, Policy8>(uuid8, i8);
             
-            Resolve(resolver, i1);
-            Resolve(resolver, i2);
-            Resolve(resolver, i3);
-            Resolve(resolver, i4);
-            Resolve(resolver, i5);
-            Resolve(resolver, i6);
-            Resolve(resolver, i7);
-            Resolve(resolver, i8);
+            Resolve(resolver, uuid1, i1);
+            Resolve(resolver, uuid2, i2);
+            Resolve(resolver, uuid3, i3);
+            Resolve(resolver, uuid4, i4);
+            Resolve(resolver, uuid5, i5);
+            Resolve(resolver, uuid6, i6);
+            Resolve(resolver, uuid7, i7);
+            Resolve(resolver, uuid8, i8);
             
             node.Root = tree.Root;
             int index = tree.Begin(array);
@@ -540,12 +584,12 @@ namespace Soe.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool Resolve<T>(DependencyTreeResolver resolver, T instance)
+        static bool Resolve<T>(DependencyTreeResolver resolver, UInt32 uuid, T instance)
             where T : class
         {
             if (instance is IBorrowAnchor anchor)
             {
-                return anchor.OnNext(resolver);
+                return anchor.OnNext(resolver, uuid);
             }
             else return false;
         }

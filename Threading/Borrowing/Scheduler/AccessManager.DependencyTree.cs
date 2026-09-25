@@ -413,18 +413,19 @@ namespace Soe.Threading
             /// <summary>
             /// Attempts to add an instance of type <typeparamref name="T"/> to the access request
             /// </summary>
+            /// <param name="uniqueId">The unique object id for this instance</param>
             /// <param name="instance">An instance to get access</param>
             /// <typeparam name="T">An instance type to get access</typeparam>
             /// <typeparam name="Policy">The access policy for this instance type</typeparam>
             /// <returns>True if a new instance was added, false if the current instance was merged</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool Add<T, Policy>(object instance)
+            public bool Add<T, Policy>(UInt32 uniqueId, object instance)
                 where T : class
                 where Policy : struct, IAccessPolicy
             {
                 // ReSharper disable BitwiseOperatorOnEnumWithoutFlags
                 
-                ref DependencyTreeNode tn = ref tree.Emplace(array, Dependency<T>.GetUniqueId(instance));
+                ref DependencyTreeNode tn = ref tree.Emplace(array, uniqueId);
                 tn.Flags |= (byte)(Policy.Order & ~AccessType.Reserved);
                 tn.Delegate = Append<T, Policy>;
                 
@@ -435,7 +436,68 @@ namespace Soe.Threading
                 
                 // ReSharper restore BitwiseOperatorOnEnumWithoutFlags
             }
+            
+            /// <summary>
+            /// Attempts to add an instance of type <typeparamref name="T"/> to the access request
+            /// </summary>
+            /// <param name="uniqueId">The unique object id for this instance</param>
+            /// <param name="instance">An instance to get access</param>
+            /// <typeparam name="T">An instance type to get access</typeparam>
+            /// <typeparam name="Policy">The access policy for this instance type</typeparam>
+            /// <returns>True if a new instance was added, false otherwise</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool AddConditional<T, Policy>(UInt32 uniqueId, object instance)
+                where T : class
+                where Policy : struct, IAccessPolicy
+            {
+                // ReSharper disable BitwiseOperatorOnEnumWithoutFlags
+                
+                ref DependencyTreeNode tn = ref tree.Emplace(array, uniqueId);
+                if (tn.Instance == null)
+                {
+                    tn.Flags |= (byte)(Policy.Order & ~AccessType.Reserved);
+                    tn.Delegate = Append<T, Policy>;
+                    tn.Instance = instance;
 
+                    return true;
+                }
+                else return false;
+
+                // ReSharper restore BitwiseOperatorOnEnumWithoutFlags
+            }
+
+            /// <summary>
+            /// Gets the desired access type for the given object instance
+            /// </summary>
+            /// <param name="uniqueId">The unique object id for the requested instance</param>
+            /// <returns>The desired access type for the given object instance if present, Empty otherwise</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public AccessType GetAccess(UInt32 uniqueId)
+            {
+                if (DependencyTree.Find(array!, uniqueId, tree.Root, out _, out Ref<DependencyTreeNode> result))
+                {
+                    // ReSharper disable BitwiseOperatorOnEnumWithoutFlags
+                    
+                    return (AccessType)result.Value.Flags & ~AccessType.Reserved;
+                    
+                    // ReSharper restore BitwiseOperatorOnEnumWithoutFlags
+                }
+                else return AccessType.Reserved;
+            }
+            
+            /// <summary>
+            /// Determines the unique object id for a given instance
+            /// </summary>
+            /// <param name="instance">An instance to get a unique id</param>
+            /// <typeparam name="T">An instance type to get a unique id</typeparam>
+            /// <returns>The unique object id for this instance</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public UInt32 GetUniqueId<T>(T instance)
+                where T : class
+            {
+                return Dependency<T>.GetUniqueId(instance);
+            }
+            
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static DependencyTreeResolver CreateInstance(DependencyTreeNode[] instanceArray, ref DependencyTree dependencyTree)
             {

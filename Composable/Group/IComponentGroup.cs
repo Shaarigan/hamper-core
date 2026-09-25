@@ -1,7 +1,7 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System.Reflection.Metadata;
+using Soe.Threading;
 
 namespace Soe.Composable
 {
@@ -10,7 +10,7 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    interface IComponentGroup : IDisposable
+    interface IComponentGroup : IDisposable, IReadOnlySequence<EntityId>
     {
         int Count
         {
@@ -21,6 +21,9 @@ namespace Soe.Composable
             where T : struct;
         
         void ComponentRemoved<T>(EntityId entity, ref int index)
+            where T : struct;
+        
+        bool OnRequest<T>(AccessManager.DependencyTreeResolver resolver, UInt32 uniqueId)
             where T : struct;
         
         bool TryGetEntity(EntityId entity, out int index);

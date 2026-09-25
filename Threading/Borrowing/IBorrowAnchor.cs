@@ -17,7 +17,8 @@ namespace Soe.Threading
         /// Notifies this type instance about a permission request
         /// </summary>
         /// <param name="resolver">The type resolver instance of this request</param>
+        /// <param name="uniqueId">The unique object id for this instance</param>
         /// <returns>True if the request needs revaluation, false otherwise</returns>
-        bool OnNext(AccessManager.DependencyTreeResolver resolver);
+        bool OnNext(AccessManager.DependencyTreeResolver resolver, UInt32 uniqueId);
     }
 }

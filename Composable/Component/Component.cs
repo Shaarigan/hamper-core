@@ -12,7 +12,7 @@ namespace Soe.Composable
     #else
     internal
     #endif
-    partial class Component<T> : SparseMap, IComponent, IReadOnlySequence<EntityId>, ISequence<T>
+    partial class Component<T> : SparseMap, IComponent, IReadOnlySequence<EntityId>, ISequence<T>, IBorrowAnchor
         where T : struct
     {
         private readonly Shard shard;
@@ -70,7 +70,15 @@ namespace Soe.Composable
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool AttachGroup(IComponentGroup componentGroup)
         {
-            return (Interlocked.CompareExchange(ref group, componentGroup, null) == null);
+            // Requires mutable access when scheduled
+            AccessManager.ThrowOnAccessViolation<Component<T>>(this, AccessType.Mutable);
+            
+            if (group == null)
+            {
+                group = componentGroup;
+                return true;
+            }
+            else return false;
         }
         
         public ref T Add(EntityId entity)
@@ -162,7 +170,7 @@ namespace Soe.Composable
             // Requires mutable access when scheduled
             AccessManager.ThrowOnAccessViolation<Component<T>>(this, AccessType.Mutable);
             
-            if (Find(entity.Index, out _, out _, out Ref<MemoryHandle> handle))
+            if (Find(entity.Index >> MemoryAllocator.BlockShift, out _, out _, out Ref<MemoryHandle> handle))
             {
                 IMemoryAllocator allocator = shard;
                 
@@ -172,17 +180,17 @@ namespace Soe.Composable
                 {
                     // Mark component as removed by adding the reserved flag
                     allocator.Access(handle.Value, entity.Index & MemoryAllocator.BlockMask, new EntityId(entityPtr.Index, entityPtr.Version, entityPtr.ShardId, EntityFlags.Reserved));
-                    if (entityPtr.Index < Count - 1)
+                    
+                    // Notify group
                     {
-                        // Notify group
-                        {
-                            int componentIndex = entityPtr.Index;
-                            Volatile.Read(ref group)?.ComponentRemoved<T>(entity, ref componentIndex);
-                            entityPtr = new EntityId(componentIndex, entityPtr.Version, entityPtr.ShardId, entityPtr.Flags);
-                        }
-                        
+                        int componentIndex = entityPtr.Index;
+                        Volatile.Read(ref group)?.ComponentRemoved<T>(entity, ref componentIndex);
+                        entityPtr = new EntityId(componentIndex, entityPtr.Version, entityPtr.ShardId, entityPtr.Flags);
+                    }
+                    if (entityPtr.Index < components.Count - 1)
+                    {
                         // Swap entity data with last entity
-                        EntityId swap = entities[Count - 1];
+                        EntityId swap = entities[components.Count - 1];
                         if (Find(swap.Index >> MemoryAllocator.BlockShift, out _, out _, out handle))
                         {
                             EntityId tmp = allocator.Access(handle.Value, swap.Index & MemoryAllocator.BlockMask);
@@ -193,7 +201,7 @@ namespace Soe.Composable
                         else throw new AccessViolationException();
                     }
 
-                    int index = Count - 1;
+                    int index = components.Count - 1;
                     components.RemoveAt(index);
                     entities.RemoveAt(index);
                     
@@ -206,7 +214,15 @@ namespace Soe.Composable
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool ReleaseGroup(IComponentGroup componentGroup)
         {
-            return (Interlocked.CompareExchange(ref group, null, componentGroup) != null);
+            // Requires mutable access when scheduled
+            AccessManager.ThrowOnAccessViolation<Component<T>>(this, AccessType.Mutable);
+
+            if (group == componentGroup)
+            {
+                group = null;
+                return true;
+            }
+            else return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -267,5 +283,14 @@ namespace Soe.Composable
             result = Ref<T>.CreateEmpty();
             return false;
         }
+
+        #region IBorrowAnchor Members
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        bool IBorrowAnchor.OnNext(AccessManager.DependencyTreeResolver resolver, UInt32 uniqueId)
+        {
+            return Volatile.Read(ref group)?.OnRequest<T>(resolver, uniqueId) ?? false;
+        }
+        #endregion
     }
 }
