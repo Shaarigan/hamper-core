@@ -42,7 +42,7 @@ namespace Soe.Collections.HashSet
     #else
     internal
     #endif
-    partial struct HashSet<T, ArrayBuffer, Container>(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor) : IIterable<Container, HashSet<T, ArrayBuffer, Container>.IteratorStrategy>, ISequence<Container>
+    partial struct HashSet<T, ArrayBuffer, Container>(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor) : IIterable<Container, HashSet<T, ArrayBuffer, Container>.IteratorStrategy>, ISequence<Container>, IDisposable
         where ArrayBuffer : struct, IArrayAccessor<Container>
         where Container : struct, IHashContainer<T>
     {
@@ -94,6 +94,14 @@ namespace Soe.Collections.HashSet
         {
             items.Clear();
             count = 0;
+        }
+        
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            Clear();
+            items.Dispose();
         }
         
         /// <summary>

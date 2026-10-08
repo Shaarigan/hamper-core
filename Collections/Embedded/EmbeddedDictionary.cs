@@ -21,7 +21,7 @@ namespace Soe.Collections.Embedded
     #else
     internal
     #endif
-    partial struct EmbeddedDictionary<TKey, TValue, ArrayBuffer> : IIterable<EmbeddedDictionary<TKey, TValue, ArrayBuffer>.HashEntry, EmbeddedDictionary<TKey, TValue, ArrayBuffer>.IteratorStrategy>, IReadOnlyIterable<EmbeddedDictionary<TKey, TValue, ArrayBuffer>.HashEntry, EmbeddedDictionary<TKey, TValue, ArrayBuffer>.ReadOnlyIteratorStrategy>, ISequence<EmbeddedDictionary<TKey, TValue, ArrayBuffer>.HashEntry>
+    partial struct EmbeddedDictionary<TKey, TValue, ArrayBuffer> : IIterable<EmbeddedDictionary<TKey, TValue, ArrayBuffer>.HashEntry, EmbeddedDictionary<TKey, TValue, ArrayBuffer>.IteratorStrategy>, IReadOnlyIterable<EmbeddedDictionary<TKey, TValue, ArrayBuffer>.HashEntry, EmbeddedDictionary<TKey, TValue, ArrayBuffer>.ReadOnlyIteratorStrategy>, ISequence<EmbeddedDictionary<TKey, TValue, ArrayBuffer>.HashEntry>, IDisposable
         where ArrayBuffer : struct, IArrayAccessor<EmbeddedDictionary<TKey, TValue, ArrayBuffer>.HashEntry>
     {
         private HashSet<TKey, ArrayBuffer, HashEntry> hashSet;
@@ -172,6 +172,13 @@ namespace Soe.Collections.Embedded
             else return false;
         }
 
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            hashSet.Dispose();
+        }
+        
         /// <summary>
         /// Removes the value with the specified key from the container
         /// </summary>
