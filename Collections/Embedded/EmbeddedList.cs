@@ -175,14 +175,19 @@ namespace Soe.Collections.Embedded
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveRange(int index, int length)
         {
-            Span<T> span = buffer.AsSpan();
-            span.Slice(index + length)
-                .CopyTo(span.Slice(index, length));
-            
-            span.Slice(count - length)
-                .Clear();
-
-            count -= length;
+            if(length > 0)
+            {
+                Span<T> span = buffer.AsSpan();
+                if(index + length < count)
+                {
+                    span.Slice(index + length, count - length)
+                        .CopyTo(span.Slice(index));
+                }
+                span.Slice(count - length)
+                    .Clear();
+                
+                count -= length;
+            }
         }
         
         /// <summary>

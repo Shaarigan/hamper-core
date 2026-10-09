@@ -11,7 +11,7 @@ namespace Soe.Parsing
     #else
     internal
     #endif
-    abstract partial class TokenReader<TokenType>
+    abstract partial class TokenReader<TokenType, Source>
     {
         /// <summary>
         /// An internal Unicode character buffer
@@ -93,9 +93,9 @@ namespace Soe.Parsing
         {
             if (position == buffer.Count)
             {
-                if (!reader.EndOfStream)
+                if (!source.EndOfStream)
                 {
-                    buffer.Add(reader.Read());
+                    buffer.Add(source.Read());
                 }
                 else return false;
             }
@@ -130,9 +130,20 @@ namespace Soe.Parsing
         /// </summary>
         protected virtual Char32 Fetch()
         {
-            if (!reader.EndOfStream)
+            if (!source.EndOfStream)
             {
-                int c = reader.Read();
+                int c = source.Read();
+                if (char.IsHighSurrogate((char)c))
+                {
+                    // Resolve UTF-16 Unicode character
+                    
+                    int low = source.Read();
+                    if (low >= 0 && char.IsLowSurrogate((char)low))
+                    {
+                        c = char.ConvertToUtf32((char)c, (char)low);
+                    }
+                    else throw new InvalidDataException();
+                }
                 buffer.Add(c);
 
                 return c;

@@ -16,15 +16,11 @@ namespace Soe.Parsing
     #else
     internal
     #endif
-    abstract partial class TokenReader<TokenType> : TokenReader<TokenType>.IStreamBuffer, IReadOnlyIterable<int, ReadOnlyIterator<int>.DefaultStrategy>, IReadOnlySequence<int>, IDisposable 
+    abstract partial class TokenReader<TokenType, Source> : TokenReader<TokenType, Source>.IStreamBuffer, IReadOnlyIterable<int, ReadOnlyIterator<int>.DefaultStrategy>, IReadOnlySequence<int>, IDisposable 
         where TokenType : struct, IComparable, IConvertible
+        where Source : struct, IStreamSource
     {
-        /// <summary>
-        /// The default size of the internal <see cref="IStreamBuffer"/> in bytes
-        /// </summary>
-        public const int DefaultBufferSize = 4096;
-
-        private readonly IStreamingContext reader;
+        private Source source;
         private EmbeddedList<int, PoolArray<int>> buffer;
 
         private int position;
@@ -45,7 +41,7 @@ namespace Soe.Parsing
         public Encoding Encoding
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return reader.CurrentEncoding; }
+            get { return source.CurrentEncoding; }
         }
 
         /// <summary>
@@ -55,7 +51,7 @@ namespace Soe.Parsing
         public bool EndOfStream
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return reader.EndOfStream && (position == buffer.Count); }
+            get { return source.EndOfStream && (position == buffer.Count); }
         }
 
         /// <summary>
@@ -86,49 +82,13 @@ namespace Soe.Parsing
         /// <summary>
         /// Creates a new token reader from the given stream
         /// </summary>
-        /// <param name="reader">The stream reader used to process the data</param>
+        /// <param name="source">The streaming source used to process the data</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TokenReader(IStreamingContext reader)
+        public TokenReader(Source source)
         {
             this.buffer = new EmbeddedList<int, PoolArray<int>>();
-            this.reader = reader;
+            this.source = source;
         }
-        /// <summary>
-        /// Creates a new token reader from the given base stream
-        /// </summary>
-        /// <param name="baseStream">The stream this reader should act on</param>
-        /// <param name="encoding">The encoding data is stored in the stream</param>
-        /// <param name="bufferSize">The size of the buffer used to read from stream</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TokenReader(Stream baseStream, Encoding encoding, int bufferSize)
-            : this(new StreamingContext(baseStream, encoding, false, bufferSize, true))
-        { }
-        /// <summary>
-        /// Creates a new token reader from the given base stream
-        /// </summary>
-        /// <param name="baseStream">The stream this reader should act on</param>
-        /// <param name="encoding">The encoding data is stored in the stream</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TokenReader(Stream baseStream, Encoding encoding)
-            : this(baseStream, encoding, DefaultBufferSize)
-        { }
-        /// <summary>
-        /// Creates a new token reader from the given base stream
-        /// </summary>
-        /// <param name="baseStream">The stream this reader should act on</param>
-        /// <param name="bufferSize">The size of the buffer used to read from stream</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TokenReader(Stream baseStream, int bufferSize)
-            : this(new StreamingContext(baseStream, Encoding.UTF8, true, bufferSize, true))
-        { }
-        /// <summary>
-        /// Creates a new token reader from the given base stream
-        /// </summary>
-        /// <param name="baseStream">The stream this reader should act on</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TokenReader(Stream baseStream)
-            : this(baseStream, DefaultBufferSize)
-        { }
 
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -143,7 +103,7 @@ namespace Soe.Parsing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void Clear()
         {
-            buffer.Clear();
+            buffer.RemoveRange(0, position);
             position = 0;
         }
 
@@ -152,7 +112,7 @@ namespace Soe.Parsing
         public virtual void Dispose()
         {
             buffer.Dispose();
-            reader.Dispose();
+            source.Dispose();
         }
         
         /// <summary>

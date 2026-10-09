@@ -1,30 +1,44 @@
 ﻿// Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System.Text;
-
-namespace Soe.Parsing
+namespace System.Text
 {
     /// <summary>
-    /// A streaming context containing the data pushed to a token reader
+    /// Implements a text reader that reads characters from the underlying source in a particular encoding
     /// </summary>
-    #if EXPORT_HAMPER_CORE_PARSING
+    #if EXPORT_HAMPER_CORE_SHARP
     public
     #else
     internal
     #endif
-    interface IStreamingContext : IDisposable
+    interface IStreamSource : IDisposable
     {
         /// <summary>
         /// Gets the character encoding set 
         /// </summary>
-        Encoding CurrentEncoding { get; }
+        Encoding CurrentEncoding
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Gets or sets the position within the current stream if supported
+        /// </summary>
+        /// <exception cref="NotSupportedException">Thrown when the stream does not support seeking</exception>
+        public long Position
+        {
+            get;
+            set;
+        }
 
         /// <summary>
         /// Gets a value that indicates whether the current stream position is at the
         /// end of the stream
         /// </summary>
-        bool EndOfStream { get; }
+        bool EndOfStream
+        {
+            get;
+        }
 
         /// <summary>
         /// Returns the next available character but does not consume it

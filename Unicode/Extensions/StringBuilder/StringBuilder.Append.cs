@@ -16,9 +16,9 @@ namespace Soe.Unicode
     static partial class StringBuilderExtension
     {
         /// <summary>
-        /// Appends the string representation of a specified 32-bit unicode character to this instance
+        /// Appends the string representation of a specified 32-bit Unicode character to this instance
         /// </summary>
-        /// <param name="c">The 32-bit unicode character to append</param>
+        /// <param name="c">The 32-bit Unicode character to append</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AppendChar(this StringBuilder builder, Char32 c)
         {

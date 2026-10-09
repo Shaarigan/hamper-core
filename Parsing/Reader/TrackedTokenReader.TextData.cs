@@ -11,7 +11,7 @@ namespace Soe.Parsing
     #else
     internal
     #endif
-    abstract partial class TrackedTokenReader<TokenType>
+    abstract partial class TrackedTokenReader<TokenType, Source>
     {
         /// <summary>
         /// An internal text range vector

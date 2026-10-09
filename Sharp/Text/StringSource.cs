@@ -2,33 +2,30 @@
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
 using System.Runtime.CompilerServices;
-using System.Text;
 
-namespace Soe.Parsing
+namespace System.Text
 {
     /// <summary>
-    /// A wrapper class embedding a string into a streaming context
+    /// A wrapper class embedding a string into a streamable source
     /// </summary>
     #if EXPORT_HAMPER_CORE_PARSING
     public
     #else
     internal
     #endif
-    class StringContext : IStreamingContext
+    struct StringSource : IStreamSource
     {
-        private readonly string? identifier;
+        private readonly string? source;
         private readonly int length;
         
         int position;
-        /// <summary>
-        /// Gets the position within the current string
-        /// </summary>
-        public int Position
+        /// <inheritdoc/>
+        public long Position
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return position; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { position = value.Clamp(0, length); }
+            set { position = (int)value.Clamp(0, length); }
         }
 
         /// <inheritdoc/>
@@ -50,9 +47,9 @@ namespace Soe.Parsing
         /// </summary>
         /// <param name="identifier">The string to which the wrapper is initialized from</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public StringContext(string? identifier) 
+        public StringSource(string? identifier) 
         {
-            this.identifier = identifier;
+            this.source = identifier;
             this.length = (identifier?.Length ?? 0);
         }
         
@@ -67,7 +64,7 @@ namespace Soe.Parsing
         {
             if (!EndOfStream)
             {
-                return identifier![position];
+                return source![position];
             }
             else return -1;
         }
@@ -78,7 +75,7 @@ namespace Soe.Parsing
         {
             if (!EndOfStream)
             {
-                return identifier![position++];
+                return source![position++];
             }
             else return -1;
         }

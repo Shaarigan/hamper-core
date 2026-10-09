@@ -10,6 +10,8 @@ namespace Soe.Unicode
     #endif
     static class Scripting
     {
+        // ReSharper disable InvalidXmlDocComment
+        
         public enum LineBreak : int
         {
             /// <summary>
@@ -541,5 +543,7 @@ namespace Soe.Unicode
             /// </summary>
             End = Nine
         }
+        
+        // ReSharper restore InvalidXmlDocComment
     }
 }

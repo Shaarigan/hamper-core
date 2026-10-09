@@ -15,8 +15,9 @@ namespace Soe.Parsing
     #else
     internal
     #endif
-    abstract partial class TrackedTokenReader<TokenType> : TokenReader<TokenType>, TrackedTokenReader<TokenType>.ITextData 
-            where TokenType : struct, IComparable, IConvertible
+    abstract partial class TrackedTokenReader<TokenType, Source> : TokenReader<TokenType, Source>, TrackedTokenReader<TokenType, Source>.ITextData 
+        where TokenType : struct, IComparable, IConvertible
+        where Source : struct, IStreamSource
     {
         private EmbeddedList<int, PoolArray<int>> buffer;
         
@@ -45,58 +46,10 @@ namespace Soe.Parsing
         /// <summary>
         /// Creates a new token reader from the given stream
         /// </summary>
-        /// <param name="reader">The stream reader used to process the data</param>
+        /// <param name="source">The streaming source used to process the data</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TrackedTokenReader(IStreamingContext reader)
-            : base(reader)
-        {
-            this.buffer = new EmbeddedList<int, PoolArray<int>>();
-            this.caret = TextPointer.Initial;
-        }
-        /// <summary>
-        /// Creates a new token reader from the given base stream
-        /// </summary>
-        /// <param name="baseStream">The stream this reader should act on</param>
-        /// <param name="encoding">The encoding data is stored in the stream</param>
-        /// <param name="bufferSize">The size of the buffer used to read from stream</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TrackedTokenReader(Stream baseStream, Encoding encoding, int bufferSize)
-            : base(baseStream, encoding, bufferSize)
-        {
-            this.buffer = new EmbeddedList<int, PoolArray<int>>();
-            this.caret = TextPointer.Initial;
-        }
-        /// <summary>
-        /// Creates a new token reader from the given base stream
-        /// </summary>
-        /// <param name="baseStream">The stream this reader should act on</param>
-        /// <param name="encoding">The encoding data is stored in the stream</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TrackedTokenReader(Stream baseStream, Encoding encoding)
-            : base(baseStream, encoding)
-        {
-            this.buffer = new EmbeddedList<int, PoolArray<int>>();
-            this.caret = TextPointer.Initial;
-        }
-        /// <summary>
-        /// Creates a new token reader from the given base stream
-        /// </summary>
-        /// <param name="baseStream">The stream this reader should act on</param>
-        /// <param name="bufferSize">The size of the buffer used to read from stream</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TrackedTokenReader(Stream baseStream, int bufferSize)
-            : base(baseStream, bufferSize)
-        {
-            this.buffer = new EmbeddedList<int, PoolArray<int>>();
-            this.caret = TextPointer.Initial;
-        }
-        /// <summary>
-        /// Creates a new token reader from the given base stream
-        /// </summary>
-        /// <param name="baseStream">The stream this reader should act on</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TrackedTokenReader(Stream baseStream)
-            : base(baseStream)
+        public TrackedTokenReader(Source source)
+            : base(source)
         {
             this.buffer = new EmbeddedList<int, PoolArray<int>>();
             this.caret = TextPointer.Initial;
@@ -115,7 +68,7 @@ namespace Soe.Parsing
         /// </summary>
         /// <param name="shift">True if the caret should be shifted, false otherwise</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected TextPointer Advance(bool shift)
+        protected TextPointer Advance(bool shift = true)
         {
             if (shift)
             {
@@ -124,14 +77,6 @@ namespace Soe.Parsing
             Clear();
 
             return caret;
-        }
-        /// <summary>
-        /// Trims the internal buffer up to the current position and updates the caret
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected TextPointer Advance()
-        {
-            return Advance(true);
         }
 
         /// <summary>
