@@ -1,0 +1,7 @@
+{
+  "type": "forwarder",
+  "name": "hamper.core.runtime",
+  "packages": [
+    "hamper.core.runtime.commands"
+  ]
+} 

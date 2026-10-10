@@ -80,7 +80,7 @@ namespace Soe.Parsing
         }
 
         /// <summary>
-        /// Creates a new token reader from the given stream
+        /// Creates a new token reader from the provided stream
         /// </summary>
         /// <param name="source">The streaming source used to process the data</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -90,6 +90,22 @@ namespace Soe.Parsing
             this.source = source;
         }
 
+        // ReSharper disable ParameterHidesMember
+        
+        /// <summary>
+        /// Reinitialize the token reader from the provided stream
+        /// </summary>
+        /// <param name="source">The streaming source used to process the data</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public virtual void Initialize(Source source)
+        {
+            this.source = source;
+            this.buffer.Clear();
+            this.position = 0;
+        }
+        
+        // ReSharper restore ParameterHidesMember
+        
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpan<int> AsReadOnlySpan()

@@ -57,6 +57,15 @@ namespace Soe.Parsing
 
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override void Initialize(Source source)
+        {
+            base.Initialize(source);
+            this.caret = TextPointer.Initial;
+            this.buffer.Clear();
+        }
+
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void Dispose()
         {
             buffer.Dispose();

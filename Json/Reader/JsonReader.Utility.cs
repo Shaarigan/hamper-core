@@ -26,9 +26,6 @@ namespace Soe.Json
         {
             for (; !EndOfStream;)
             {
-                if (Position >= 425330)
-                { }
-
                 switch (StreamBuffer.Peek())
                 {
                     #region Escape Sequence

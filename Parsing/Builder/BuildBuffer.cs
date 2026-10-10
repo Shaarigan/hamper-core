@@ -54,7 +54,7 @@ namespace Soe.Parsing
         }
 
         /// <summary>
-        /// Removes all tokens from this buffer
+        /// Removes all tokens from the buffer
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()

@@ -3,26 +3,23 @@
 
 using System.Runtime.CompilerServices;
 
-namespace Soe.Json
+namespace Soe.Runtime
 {
     /// <summary>
-    /// A JSON parser fragment
+    /// A command parser fragment
     /// </summary>
     #if EXPORT_HAMPER_CORE_JSON
     public
     #else
     internal
     #endif
-    struct JsonFragment
+    struct CommandFragment
     {
-        private JsonToken type;
+        private CommandToken type;
         /// <summary>
         /// Returns this fragments type
         /// </summary>
-        /// <remarks>
-        /// Must be one of (BeginObject, EndObject, BeginArray, EndArray, Null, Boolean, Numeric, String)
-        /// </remarks>
-        public JsonToken Type
+        public CommandToken Type
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return type; }
@@ -60,34 +57,18 @@ namespace Soe.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
-            this.type = JsonToken.Invalid;
+            this.type = CommandToken.EndOfStream;
             this.name = string.Empty;
             this.rawValue = string.Empty;
         }
         /// <summary>
         /// Resets this fragment to default
         /// </summary>
-        /// <param name="token">One of (BeginObject, EndObject, BeginArray, EndArray, Null, Boolean, Numeric, String)</param>
-        public void Clear(JsonToken token)
+        public void Clear(CommandToken token)
         {
-            switch (token)
-            {
-                case JsonToken.BeginObject:
-                case JsonToken.EndObject:
-                case JsonToken.BeginArray:
-                case JsonToken.EndArray:
-                case JsonToken.Null:
-                case JsonToken.Boolean:
-                case JsonToken.Numeric:
-                case JsonToken.String:
-                    {
-                        this.type = token;
-                        this.name = string.Empty;
-                        this.rawValue = string.Empty;
-                    }
-                    break;
-                default: throw new ArgumentOutOfRangeException(nameof(token));
-            }
+            this.type = token;
+            this.name = string.Empty;
+            this.rawValue = string.Empty;
         }
 
         /// <summary>
@@ -96,7 +77,7 @@ namespace Soe.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToBoolean(out bool result)
         {
-            if (type != JsonToken.Boolean || !bool.TryParse(rawValue, out result))
+            if (!bool.TryParse(rawValue, out result))
             {
                 result = false;
                 return false;
@@ -282,7 +263,7 @@ namespace Soe.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToDecimal(out Decimal result)
         {
-            if (type != JsonToken.Numeric || !Decimal.TryParse(rawValue, out result))
+            if (!Decimal.TryParse(rawValue, out result))
             {
                 result = 0;
                 return false;
@@ -296,14 +277,7 @@ namespace Soe.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString()
         {
-            switch(type)
-            {
-                case JsonToken.Null: return type.ToString();
-                case JsonToken.Boolean:
-                case JsonToken.Numeric:
-                case JsonToken.String: return rawValue;
-                default: return string.Empty;
-            }
+            return rawValue;
         }
     }
 }

@@ -23,10 +23,7 @@ namespace Soe.Json
         enum JsonProcessingFlags : byte
         {
             BeforeJson = 0,
-
-            Object,
-            Array,
-
+            
             BeforeElement,
             AfterElement,
 
@@ -39,7 +36,7 @@ namespace Soe.Json
         private BuildState<JsonProcessingFlags> state;
         private readonly StringBuilder buffer;
 
-        TextRange match;
+        private TextRange match;
         /// <summary>
         /// The text range of current token
         /// </summary>
@@ -59,7 +56,7 @@ namespace Soe.Json
             get { return errors.AsSpan(); }
         }
 
-        JsonFragment fragment;
+        private JsonFragment fragment;
         /// <summary>
         /// Returns the current parser fragment
         /// </summary>
@@ -88,7 +85,17 @@ namespace Soe.Json
             this.state.Set(JsonProcessingFlags.BeforeJson);
             this.errors = new EmbeddedList<string, PoolArray<string>>();
         }
-        
+
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override void Initialize(Source source)
+        {
+            base.Initialize(source);
+            this.buffer.Clear();
+            this.errors.Clear();
+            this.state.Clear();
+        }
+
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void Dispose()

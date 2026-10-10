@@ -76,6 +76,15 @@ namespace Soe.Parsing
         {
             return stack.AsSpan();
         }
+
+        /// <summary>
+        /// Removes all active states from the stack
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Clear()
+        {
+            stack.Clear();
+        }
         
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
