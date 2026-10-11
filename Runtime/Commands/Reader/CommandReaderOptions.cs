@@ -12,28 +12,28 @@ namespace Soe.Runtime
     #else
     internal
     #endif
-    enum CommandReaderOptions
+    enum CommandReaderOptions : int
     {
         Default = 0,
-        
         /// <summary>
         /// Treats characters (-abc) as multiple commands a, b, c
         /// </summary>
         AllowCompound = 0x1,
-        
         /// <summary>
         /// Allows verbs to appear in the command stream. Verbs are ignored otherwise
         /// </summary>
         AllowVerbValues = 0x2,
-        
+        /// <summary>
+        /// Allows the solidus (/) character as invariant command delimiter
+        /// </summary>
+        AllowInvariant = 0x4,
         /// <summary>
         /// Provides command names as lower invariant values
         /// </summary>
-        IgnoreCase = 0x4,
-        
+        IgnoreCase = 0x8,
         /// <summary>
-        /// Ignores the solidus (/) character as invariant command delimiter
+        /// Provies commands that haven't been successfully matched to an option
         /// </summary>
-        IgnoreInvariant = 0x8,
+        IgnoreMatch = 0x10
     }
 }

@@ -20,7 +20,8 @@ namespace Soe.Runtime
         CompoundArgument = 4,
         
         Command = 6,
-        VerbValue = 7,
-        PlainText,
+        Verb,
+        
+        Unknown
     }
 }

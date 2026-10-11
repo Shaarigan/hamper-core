@@ -54,7 +54,7 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="source">The stream reader used to process the data</param>
         /// <param name="options">Configures the behavior of the argument reader</param>
-        public CommandReader(Source source, CommandReaderOptions options = CommandReaderOptions.AllowVerbValues)
+        public CommandReader(Source source, CommandReaderOptions options = CommandReaderOptions.AllowVerbValues | CommandReaderOptions.IgnoreMatch)
             : base(source)
         {
             this.options = options;
@@ -78,12 +78,39 @@ namespace Soe.Runtime
         {
             StringBuilderPool.Shared.Return(buffer);
         }
-
+        
+        bool Evaluate(ReadOnlySpan<Option> commandOptions)
+        {
+            if (commandOptions.TryFindOption(fragment.Name, out Option option))
+            {
+                if (option.FlagSet(OptionFlags.Alias))
+                {
+                    if (option.Parameter != null)
+                    {
+                        fragment.Name = option.Parameter;
+                        return Evaluate(commandOptions);
+                    }
+                    else fragment.Type = CommandToken.Unknown;
+                    return true;
+                }
+                else if (!option.FlagSet(OptionFlags.RequiresParameter) || option.FlagSet(OptionFlags.Flag))
+                {
+                    return true;
+                }
+            }
+            else if (!options.HasFlag(CommandReaderOptions.IgnoreMatch))
+            {
+                fragment.Type = CommandToken.Unknown;
+            }
+            return false;
+        }
+        
         /// <summary>
         /// Reads the next token from the input stream and advances it's position by one
         /// </summary>
+        /// <param name="commandOptions">A collection of options passed to the parser</param>
         /// <returns>True if a token could be read properly, false otherwise</returns>
-        public new bool Read()
+        public bool Read(ReadOnlySpan<Option> commandOptions)
         {
 
         Next:
@@ -105,12 +132,16 @@ namespace Soe.Runtime
                                         .ToLowerInvariant();
                                 }
                                 else fragment.Name = buffer.ToString();
-                                state.Set(CommandProcessingFlags.BeforeValue);
+                                if (!Evaluate(commandOptions))
+                                {
+                                    state.Set(CommandProcessingFlags.BeforeValue);
+                                }
+                                else return true;
                             }
                             goto Next;
                         #endregion
                         
-                        #region Argument
+                        #region Compound
                         case CommandToken.CompoundArgument:
                             {
                                 bool hasCommandsLeft;
@@ -130,7 +161,7 @@ namespace Soe.Runtime
                                 else fragment.Name = buffer[0].ToString();
                                 buffer.Remove(0, 1);
 
-                                if (!hasCommandsLeft)
+                                if (!Evaluate(commandOptions) && !hasCommandsLeft)
                                 {
                                     state.Set(CommandProcessingFlags.BeforeValue);
                                 }
@@ -140,19 +171,9 @@ namespace Soe.Runtime
                         #endregion
                         
                         #region VerbValue
-                        case CommandToken.ArgumentValue: if(options.FlagSet(CommandReaderOptions.AllowVerbValues))
+                        case CommandToken.ArgumentValue:
                             {
-                                fragment.Clear(CommandToken.VerbValue);
-                                fragment.RawValue = buffer.ToString();
-                                return true;
-                            }
-                            else goto Next;
-                        #endregion
-                        
-                        #region PlainText
-                        case CommandToken.PlainText:
-                            {
-                                fragment.Clear(CommandToken.PlainText);
+                                fragment.Clear(options.FlagSet(CommandReaderOptions.AllowVerbValues) ? CommandToken.Verb : CommandToken.Unknown);
                                 fragment.RawValue = buffer.ToString();
                             }
                             return true;
@@ -198,7 +219,15 @@ namespace Soe.Runtime
             }
             throw new NotImplementedException();
         }
-
+        /// <summary>
+        /// Reads the next token from the input stream and advances it's position by one
+        /// </summary>
+        /// <returns>True if a token could be read properly, false otherwise</returns>
+        public new bool Read()
+        {
+            return Read(Array.Empty<Option>());
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         CommandToken ReadNext()
         {

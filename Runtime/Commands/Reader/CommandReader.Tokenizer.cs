@@ -52,7 +52,7 @@ namespace Soe.Runtime
                                     {
                                         buffer.AppendChar(StreamBuffer.GetNext());
                                     }
-                                    token = CommandToken.PlainText;
+                                    token = CommandToken.Verb;
                                     return true;
                                 }
                                 #endregion
@@ -86,7 +86,7 @@ namespace Soe.Runtime
                     }
 
                 #region /ArgumentName
-                case (UInt32)Scripting.Punctuation.Solidus: if(!options.FlagSet(CommandReaderOptions.IgnoreInvariant) && !isValue)
+                case (UInt32)Scripting.Punctuation.Solidus: if(options.FlagSet(CommandReaderOptions.AllowInvariant) && !isValue)
                     {
                         buffer.Clear();
                         if (GetStringLiteral())
