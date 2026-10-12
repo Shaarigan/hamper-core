@@ -39,7 +39,7 @@ namespace System.Text
         public bool EndOfStream
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return (position == length); }
+            get { return (position >= length); }
         }
 
         /// <summary>

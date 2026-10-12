@@ -10,14 +10,24 @@ namespace Soe.Runtime
     #endif
     static class SpanExtension
     {
+        // ReSharper disable InvalidXmlDocComment
+        
+        /// <summary>
+        /// Attempts to return the element with the provided name in this collection
+        /// </summary>
+        /// <param name="name">The name of an element in this collection</param>
+        /// <param name="result">The command matching the provided name</param>
+        /// <returns>True if an element with the provided name was found, false otherwise</returns>
         public static bool TryFindOption(this ReadOnlySpan<Option> options, string name, out Option result)
         {
             if(options.Length > 0)
             {
                 int lo = 0;
                 int hi = options.Length;
+                int length = name.Length;
                 char first = name[0];
 
+                // Try finding the start of the window via binary search
                 while (lo < hi)
                 {
                     int mid = (lo + ((hi - lo) >> 1));
@@ -25,12 +35,20 @@ namespace Soe.Runtime
                     {
                         lo = mid + 1;
                     }
+                    else if (options[mid].Name.Length == length && options[mid].Name.SequenceEqual(name))
+                    {
+                        // Early out
+
+                        result = options[mid];
+                        return true;
+                    }
                     else hi = mid;
                 }
 
                 hi = options.Length;
                 int start = lo;
 
+                // Try finding the end of the window via binary search
                 while (lo < hi)
                 {
                     int mid = (lo + ((hi - lo) >> 1));
@@ -38,10 +56,18 @@ namespace Soe.Runtime
                     {
                         lo = mid + 1;
                     }
+                    else if (options[mid].Name.Length == length && options[mid].Name.SequenceEqual(name))
+                    {
+                        // Early out
+                        
+                        result = options[mid];
+                        return true;
+                    }
                     else hi = mid;
                 }
 
-                for (int i = start, length = name.Length; i < lo; i++)
+                // Try finding the matching element from the given window
+                for (int i = start; i < lo; i++)
                 {
                     if (options[i].Name.Length == length && options[i].Name.SequenceEqual(name))
                     {
@@ -53,5 +79,7 @@ namespace Soe.Runtime
             result = default;
             return false;
         }
+        
+        // ReSharper restore InvalidXmlDocComment
     }
 }

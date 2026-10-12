@@ -106,7 +106,7 @@ namespace Soe.Runtime
 
                         Position--;
                         GetStringLiteral(Scripting.WhiteSpace.Space);
-                        token = CommandToken.ArgumentValue;
+                        token = (isValue) ? CommandToken.ArgumentValue : CommandToken.FloatingValue;
                     }
                     return true;
                 #endregion

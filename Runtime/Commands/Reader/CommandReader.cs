@@ -108,8 +108,10 @@ namespace Soe.Runtime
         /// <summary>
         /// Reads the next token from the input stream and advances it's position by one
         /// </summary>
-        /// <param name="commandOptions">A collection of options passed to the parser</param>
+        /// <param name="commandOptions">A sorted collection of options passed to the parser</param>
         /// <returns>True if a token could be read properly, false otherwise</returns>
+        /// <remarks>The collection provided via <paramref name="commandOptions"/> must be sorted in ASCII byte order: [0-9][A-Z][a-z][punctuations],
+        /// in order to prevent performance impact while resolving parsed commands into the corresponding option</remarks>
         public bool Read(ReadOnlySpan<Option> commandOptions)
         {
 
@@ -170,8 +172,17 @@ namespace Soe.Runtime
                             goto Next;
                         #endregion
                         
-                        #region VerbValue
+                        #region Value
                         case CommandToken.ArgumentValue:
+                            {
+                                fragment.Clear(CommandToken.Unknown);
+                                fragment.RawValue = buffer.ToString();
+                            }
+                            return true;
+                        #endregion
+                        
+                        #region Verb
+                        case CommandToken.FloatingValue:
                             {
                                 fragment.Clear(options.FlagSet(CommandReaderOptions.AllowVerbValues) ? CommandToken.Verb : CommandToken.Unknown);
                                 fragment.RawValue = buffer.ToString();
@@ -198,6 +209,7 @@ namespace Soe.Runtime
                     {
                         #region Value
                         case CommandToken.ArgumentValue:
+                        case CommandToken.FloatingValue:
                             {
                                 fragment.RawValue = buffer.ToString();
                                 state.Reset();

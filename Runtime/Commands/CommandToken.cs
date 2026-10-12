@@ -17,6 +17,7 @@ namespace Soe.Runtime
 
         ArgumentName = 1,
         ArgumentValue = 2,
+        FloatingValue = 3,
         CompoundArgument = 4,
         
         Command = 6,
