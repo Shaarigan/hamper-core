@@ -14,9 +14,23 @@ namespace Soe.Crypto
 	#else
 	internal
 	#endif
-    sealed class Secp192r1 : Curve
+    sealed class Secp192r1 : Curve<Point>
     {
-        public Secp192r1()
+	    private static readonly Secp192r1 instance;
+	    /// <summary>
+	    /// Gets the global instance of this curve
+	    /// </summary>
+	    public static Secp192r1 Instance
+	    {
+		    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		    get { return instance; }
+	    }
+
+	    static Secp192r1()
+	    {
+		    instance = new Secp192r1();
+	    }
+        private Secp192r1()
             : base(3)
         {
             P[0] = 0xFFFFFFFFFFFFFFFFul;
@@ -40,6 +54,7 @@ namespace Soe.Crypto
             N[2] = 0xFFFFFFFFFFFFFFFFul;
         }
 
+        /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void ModMult(Span<UInt64> a, Span<UInt64> b, Span<UInt64> c)
         {

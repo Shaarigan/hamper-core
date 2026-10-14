@@ -20,24 +20,27 @@ namespace Soe.Crypto
 		/// Determines if a is zero
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static bool IsZero(Point a)
+		public static bool IsZero<CurvePoint>(in CurvePoint a)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
-			return (BigMath.IsZero(a.X, a.Size) && 
-				    BigMath.IsZero(a.Y, a.Size));
+			return (BigMath.IsZero(a.X, a.SegmentCount) && 
+				    BigMath.IsZero(a.Y, a.SegmentCount));
 		}
 
 		/// <summary>
 		/// Assigns product of b and c modulo P to a
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void ModMult(Curve curve, Span<UInt64> a, Span<UInt64> b, Span<UInt64> c)
+		public static void ModMult<CurvePoint>(Curve<CurvePoint> curve, Span<UInt64> a, Span<UInt64> b, Span<UInt64> c)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
 			curve.ModMult(a, b, c);
 		}
 		/// <summary>
 		/// Assigns sqrt of b modulo P to a
 		/// </summary>
-		public static void ModSqrt(Curve curve, Span<UInt64> a, Span<UInt64> b)
+		public static void ModSqrt<CurvePoint>(Curve<CurvePoint> curve, Span<UInt64> a, Span<UInt64> b)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
 			Span<UInt64> tmp = stackalloc UInt64[curve.Words];
             tmp[0] = 1;
@@ -122,7 +125,8 @@ namespace Soe.Crypto
 		/// (X, Y) = (X * Z^2, Y * Z^3)
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void Add(Curve curve, Span<UInt64> x, Span<UInt64> y, Span<UInt64> z)
+		public static void Add<CurvePoint>(Curve<CurvePoint> curve, Span<UInt64> x, Span<UInt64> y, Span<UInt64> z)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
 			UInt64[] tmp = new UInt64[curve.Words];
 			ModMult(curve, tmp, z, z);
@@ -131,9 +135,10 @@ namespace Soe.Crypto
 			ModMult(curve, y, y, tmp);
 		}
 		/// <summary>
-		/// Adds a point to another point sharing the same z coord
+		/// Adds a <typeparamref name="CurvePoint"/> to another <typeparamref name="CurvePoint"/> sharing the same z coord
 		/// </summary>
-		public static void Add(Curve curve, Point a, Point b, Point c)
+		public static void Add<CurvePoint>(Curve<CurvePoint> curve, ref CurvePoint a, in CurvePoint b, in CurvePoint c)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
 			Span<UInt64> tX1 = stackalloc UInt64[curve.Words];
 			Span<UInt64> tY1 = stackalloc UInt64[curve.Words];
@@ -162,7 +167,8 @@ namespace Soe.Crypto
         /// (X2, Y2) = (X1, Y1) + (X2, Y2)
 		/// (X1, Y1) = (X1', Y1')
 		/// </summary>
-		public static void Add(Curve curve, Span<UInt64> x1, Span<UInt64> y1, Span<UInt64> x2, Span<UInt64> y2)
+		public static void Add<CurvePoint>(Curve<CurvePoint> curve, Span<UInt64> x1, Span<UInt64> y1, Span<UInt64> x2, Span<UInt64> y2)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
 			Span<UInt64> tmp = stackalloc UInt64[curve.Words];
 			
@@ -187,7 +193,8 @@ namespace Soe.Crypto
         /// (X1, Y1) = (X1, Y1) - (X2, Y2)
 		/// (X2, Y2) = (X1, Y1) + (X2, Y2)
 		/// </summary>
-		public static void Add2(Curve curve, Span<UInt64> x1, Span<UInt64> y1, Span<UInt64> x2, Span<UInt64> y2)
+		public static void Add2<CurvePoint>(Curve<CurvePoint> curve, Span<UInt64> x1, Span<UInt64> y1, Span<UInt64> x2, Span<UInt64> y2)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
 			Span<UInt64> p1 = stackalloc UInt64[curve.Words];
 			Span<UInt64> p2 = stackalloc UInt64[curve.Words];
@@ -219,9 +226,10 @@ namespace Soe.Crypto
 		}
 
 		/// <summary>
-		/// Adds an ECC point inplace to itself
+		/// Adds a point to itself inplace
 		/// </summary>
-		public static void Double(Curve curve, Span<UInt64> x, Span<UInt64> y, Span<UInt64> z)
+		public static void Double<CurvePoint>(Curve<CurvePoint> curve, Span<UInt64> x, Span<UInt64> y, Span<UInt64> z)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
 			Span<UInt64> p1 = stackalloc UInt64[curve.Words];
 			Span<UInt64> p2 = stackalloc UInt64[curve.Words];
@@ -262,9 +270,10 @@ namespace Soe.Crypto
 			BigMath.Assign(y, p1, curve.Words);
 		}
 		/// <summary>
-		/// Assigns an ECC point twice to another point
+		/// Assigns a point to another point twice
 		/// </summary>
-		public static void Double(Curve curve, Span<UInt64> x1, Span<UInt64> y1, Span<UInt64> x2, Span<UInt64> y2)
+		public static void Double<CurvePoint>(Curve<CurvePoint> curve, Span<UInt64> x1, Span<UInt64> y1, Span<UInt64> x2, Span<UInt64> y2)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
 			UInt64[] z = new UInt64[curve.Words];
 			BigMath.Assign(x2, x1, curve.Words);
@@ -281,7 +290,8 @@ namespace Soe.Crypto
 		/// <summary>
 		/// Assigns product of b and scalar to a
 		/// </summary>
-		public static void Mult(Curve curve, Point a, Point b, Span<UInt64> scalar)
+		public static void Mult<CurvePoint>(Curve<CurvePoint> curve, ref CurvePoint a, in CurvePoint b, Span<UInt64> scalar)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
 			UInt64[][] rX =
 			[
@@ -322,32 +332,35 @@ namespace Soe.Crypto
 		}
 
 		/// <summary>
-		/// Compresses a point into half its size + 1 in bytes
+		/// Compresses a CurvePoint into half its size + 1 in bytes
 		/// </summary>
-		public static void Compress(Point a, Span<byte> compressed)
+		public static void Compress<CurvePoint>(in CurvePoint a, Span<byte> compressed)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
-			Encode(compressed, 1, a.X, 0, a.Size);
+			Encode(compressed, 1, a.X, 0, a.SegmentCount);
 		 	compressed[0] = (byte)(2 + (a.Y[0] & 0x01));
 		}
 		/// <summary>
-        /// Decompresses a range of bytes into a point
+        /// Decompresses a range of bytes into a CurvePoint
 		/// </summary>
-		public static bool Decompress(Curve curve, Point a, Span<byte> compressed)
+		public static bool Decompress<CurvePoint>(Curve<CurvePoint> curve, ref CurvePoint a, Span<byte> compressed)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
 			if (compressed[0] == 0x04)
 			{
 				return false;
 			}
-            Decode(a.X, 0, compressed, 1, a.Size);
-			Expand(curve, a, a.X, compressed[0]);
+            Decode(a.X, 0, compressed, 1, a.SegmentCount);
+			Expand(curve, ref a, a.X, compressed[0]);
 			
 			return true;
 		}
 
 		/// <summary>
-		/// Expands the given X-coord b into a point a
+		/// Expands the given X-coord b into a CurvePoint a
 		/// </summary>
-		public static void Expand(Curve curve, Point a, Span<UInt64> b, byte signalBit)
+		public static void Expand<CurvePoint>(Curve<CurvePoint> curve, ref CurvePoint a, Span<UInt64> b, byte signalBit)
+			where CurvePoint : struct, ICurvePoint<CurvePoint>
 		{
 			Span<UInt64> _3 = stackalloc UInt64[curve.Words];
 			_3[0] = 3;

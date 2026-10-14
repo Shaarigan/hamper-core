@@ -14,9 +14,23 @@ namespace Soe.Crypto
 	#else
 	internal
 	#endif
-    sealed class Secp256r1 : Curve
+    sealed class Secp256r1 : Curve<Point256>
     {
-        public Secp256r1()
+        private static readonly Secp256r1 instance;
+        /// <summary>
+        /// Gets the global instance of this curve
+        /// </summary>
+        public static Secp256r1 Instance
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return instance; }
+        }
+
+        static Secp256r1()
+        {
+            instance = new Secp256r1();
+        }
+        private Secp256r1()
             : base(4)
         {
             P[0] = 0xFFFFFFFFFFFFFFFFul;
@@ -28,15 +42,15 @@ namespace Soe.Crypto
             B[1] = 0x651D06B0CC53B0F6ul;
             B[2] = 0xB3EBBD55769886BCul;
             B[3] = 0x5AC635D8AA3A93E7ul;
-
-            G.X[0] = 0xF4A13945D898C296ul;
-            G.X[1] = 0x77037D812DEB33A0ul;
-            G.X[2] = 0xF8BCE6E563A440F2ul;
-            G.X[3] = 0x6B17D1F2E12C4247ul;
-            G.Y[0] = 0xCBB6406837BF51F5ul;
-            G.Y[1] = 0x2BCE33576B315ECEul;
-            G.Y[2] = 0x8EE7EB4A7C0F9E16ul;
-            G.Y[3] = 0x4FE342E2FE1A7F9Bul;
+            
+            g.X[0] = 0xF4A13945D898C296ul;
+            g.X[1] = 0x77037D812DEB33A0ul;
+            g.X[2] = 0xF8BCE6E563A440F2ul;
+            g.X[3] = 0x6B17D1F2E12C4247ul;
+            g.Y[0] = 0xCBB6406837BF51F5ul;
+            g.Y[1] = 0x2BCE33576B315ECEul;
+            g.Y[2] = 0x8EE7EB4A7C0F9E16ul;
+            g.Y[3] = 0x4FE342E2FE1A7F9Bul;
 
             N[0] = 0xF3B9CAC2FC632551ul;
             N[1] = 0xBCE6FAADA7179E84ul;
@@ -44,6 +58,7 @@ namespace Soe.Crypto
             N[3] = 0xFFFFFFFF00000000ul;
         }
 
+        /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void ModMult(Span<UInt64> a, Span<UInt64> b, Span<UInt64> c)
         {

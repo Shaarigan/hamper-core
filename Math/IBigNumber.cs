@@ -16,7 +16,7 @@ namespace Soe.Utility
         /// <summary>
         /// Gets the amount of data segments this integer is based on
         /// </summary>
-        int SegmentCount
+        static abstract int SegmentCount
         {
             get;
         }

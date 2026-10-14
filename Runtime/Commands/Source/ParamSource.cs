@@ -9,7 +9,7 @@ namespace Soe.Runtime
     /// <summary>
     /// A wrapper class embedding a parameter array into a streamable source
     /// </summary>
-    #if EXPORT_HAMPER_CORE_PARSING
+    #if EXPORT_HAMPER_CORE_RUNTIME_COMMANDS
     public
     #else
     internal

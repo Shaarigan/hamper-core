@@ -8,7 +8,7 @@ namespace Soe.Runtime
     /// <summary>
     /// A command parser fragment
     /// </summary>
-    #if EXPORT_HAMPER_CORE_JSON
+    #if EXPORT_HAMPER_CORE_RUNTIME_COMMANDS
     public
     #else
     internal

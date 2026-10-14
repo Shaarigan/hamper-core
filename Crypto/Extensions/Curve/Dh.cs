@@ -15,18 +15,19 @@ namespace Soe.Crypto
     static partial class CurveExtension
     {
         /// <summary>
-        /// Creates a shared secret from two Elliptic Curve Cryptography keys
+        /// Creates a shared secret from two elliptic curve Cryptography keys
         /// </summary>
         /// <param name="curve">The curve in which order the key should exist</param>
         /// <param name="publicKey">A foreign Elliptic Curve Cryptography public key</param>
         /// <param name="selfPrivateKey">The local Elliptic Curve Cryptography private key</param>
         /// <param name="shared">An array of 64 bit segments to store the secret</param>
         /// <returns>An indicator flag to determine if the result is odd or even</returns>
-        public static byte GetSharedKey(this Curve curve, Point publicKey, Span<UInt64> selfPrivateKey, Span<UInt64> shared)
+        public static byte GetSharedKey<CurvePoint>(this Curve<CurvePoint> curve, in CurvePoint publicKey, Span<UInt64> selfPrivateKey, Span<UInt64> shared)
+            where CurvePoint : struct, ICurvePoint<CurvePoint>
         {
-            Point tmp = new Point(curve.Words);
+            CurvePoint tmp = CurvePoint.Create(curve.Words);
 
-            EccMath.Mult(curve, tmp, publicKey, selfPrivateKey);
+            EccMath.Mult(curve, ref tmp, publicKey, selfPrivateKey);
             BigMath.Assign(shared, tmp.X, curve.Words);
 
             if (EccMath.IsZero(tmp))
@@ -45,7 +46,8 @@ namespace Soe.Crypto
         /// <param name="selfPrivateKey">The local Elliptic Curve Cryptography private key</param>
         /// <param name="sharedPrivateKey">An array of 64 bit segments to store the key</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void GetSharedPrivateKey(this Curve curve, Point publicKey, Span<UInt64> selfPrivateKey, Span<UInt64> sharedPrivateKey)
+        public static void GetSharedPrivateKey<CurvePoint>(this Curve<CurvePoint> curve, in CurvePoint publicKey, Span<UInt64> selfPrivateKey, Span<UInt64> sharedPrivateKey)
+            where CurvePoint : struct, ICurvePoint<CurvePoint>
         {
             Span<UInt64> c = stackalloc UInt64[curve.Words];
             GetScalarFromSecret(curve, publicKey, selfPrivateKey, c);
@@ -61,21 +63,23 @@ namespace Soe.Crypto
         /// <param name="publicKey">A foreign Elliptic Curve Cryptography public key</param>
         /// <param name="selfPrivateKey">The local Elliptic Curve Cryptography private key</param>
         /// <param name="sharedPubKey">The resulting public key</param>
-        public static void GetSharedPublicKey(this Curve curve, Point publicKey, Span<UInt64> selfPrivateKey, Point sharedPubKey)
+        public static void GetSharedPublicKey<CurvePoint>(this Curve<CurvePoint> curve, in CurvePoint publicKey, Span<UInt64> selfPrivateKey, ref CurvePoint sharedPubKey)
+            where CurvePoint : struct, ICurvePoint<CurvePoint>
         {
             Span<UInt64> c = stackalloc UInt64[curve.Words];
             
             GetScalarFromSecret(curve, publicKey, selfPrivateKey, c);
 
-            Point tmp = new Point(curve.Words);
-            EccMath.Mult(curve, tmp, curve.G, c);
-            EccMath.Add(curve, sharedPubKey, publicKey, tmp);
+            CurvePoint tmp = CurvePoint.Create(curve.Words);
+            EccMath.Mult(curve, ref tmp, curve.G, c);
+            EccMath.Add(curve, ref sharedPubKey, publicKey, tmp);
         }
 
-        private static void GetScalarFromSecret(Curve curve, Point publicKey, Span<UInt64> privateKey, Span<UInt64> scalar)
+        private static void GetScalarFromSecret<CurvePoint>(Curve<CurvePoint> curve, in CurvePoint publicKey, Span<UInt64> privateKey, Span<UInt64> scalar)
+            where CurvePoint : struct, ICurvePoint<CurvePoint>
         {
-            Point tmp = new Point(curve.Words);
-            EccMath.Mult(curve, tmp, publicKey, privateKey);
+            CurvePoint tmp = CurvePoint.Create(curve.Words);
+            EccMath.Mult(curve, ref tmp, publicKey, privateKey);
 
             Span<byte> hash = stackalloc byte[curve.Bytes + 1];
             EccMath.Compress(tmp, hash);

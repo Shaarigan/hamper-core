@@ -14,7 +14,8 @@ namespace Soe.Crypto
 	#else
 	internal
 	#endif
-    abstract class Curve
+    abstract class Curve<CurvePoint>
+        where CurvePoint : struct, ICurvePoint<CurvePoint>
     {
         private readonly int words;
         /// <summary>
@@ -55,11 +56,11 @@ namespace Soe.Crypto
             get { return b; }
         }
 
-        Point g;
+        protected CurvePoint g;
 		/// <summary>
 		/// A base point describing the curve
 		/// </summary>
-        public Point G
+        public CurvePoint G
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return g; }
@@ -77,7 +78,6 @@ namespace Soe.Crypto
         }
 
         UInt64[] h;
-
         /// <summary>
 		/// The curves cofactor
 		/// </summary>
@@ -96,7 +96,7 @@ namespace Soe.Crypto
             this.words = size;
             this.p = new UInt64[size];
             this.b = new UInt64[size];
-            this.g = new Point(size);
+            this.g = CurvePoint.Create(size);
             this.n = new UInt64[size];
             this.h = new UInt64[size];
         }
