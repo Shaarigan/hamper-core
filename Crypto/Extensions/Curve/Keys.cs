@@ -14,8 +14,7 @@ namespace Soe.Crypto
     static partial class CurveExtension
     {
         /// <summary>
-        /// Creates a new Elliptic Curve Cryptography Data Signing private key from
-        /// a given seed
+        /// Creates a new elliptic curve cryptography data signing private key from a given seed
         /// </summary>
         /// <param name="curve">The curve in which order the key should exist</param>
         /// <param name="privateKey">An array of 64 bit segments to store the key</param>
@@ -38,7 +37,7 @@ namespace Soe.Crypto
             return (!BigMath.IsZero(privateKey, curve.Words));
         }
         /// <summary>
-        /// Creates a new Elliptic Curve Cryptography Data Signing private key
+        /// Creates a new elliptic curve cryptography data signing private key
         /// </summary>
         /// <param name="curve">The curve in which order the key should exist</param>
         /// <param name="privateKey">An array of 64 bit segments to store the key</param>
@@ -61,8 +60,7 @@ namespace Soe.Crypto
         }
 
         /// <summary>
-        /// Creates the corresponding elliptic curve cryptography data signing public key
-        /// from a given private key
+        /// Creates the corresponding elliptic curve cryptography data signing public key from a given private key
         /// </summary>
         /// <param name="curve">The curve in which order the key should exist</param>
         /// <param name="privateKey">The key to generate it's public counterpart for</param>
