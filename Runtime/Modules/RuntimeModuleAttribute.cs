@@ -10,6 +10,14 @@ namespace Soe.Runtime
     internal abstract class RuntimeModuleAttribute : Attribute
     {
         /// <summary>
+        /// Gets the name of this module
+        /// </summary>
+        public abstract string ModuleName
+        {
+            get;
+        }
+        
+        /// <summary>
         /// Gets if this module can be executed similar to a standalone program
         /// </summary>
         public abstract bool IsMainModule

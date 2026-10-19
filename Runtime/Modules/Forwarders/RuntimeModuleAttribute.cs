@@ -26,7 +26,24 @@ namespace Soe.Runtime
     {
         private delegate void RunDelegate(string[] args);
         private readonly RunDelegate? runInternal;
+        private readonly string moduleName;
         
+        /// <summary>
+        /// Gets the name of this module
+        /// </summary>
+        #if COMPILER_FLAG_RUNTIME_MODULE
+        public string ModuleName
+        #else
+        public override string ModuleName
+        #endif
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return moduleName; }
+        }
+        
+        /// <summary>
+        /// Gets if this module can be executed similar to a standalone program
+        /// </summary>
         #if COMPILER_FLAG_RUNTIME_MODULE
         public bool IsMainModule
         #else
@@ -40,14 +57,16 @@ namespace Soe.Runtime
         /// <summary>
         /// Creates a new instance of this attribute
         /// </summary>
+        /// <param name="moduleName">The name of this module</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public RuntimeModuleAttribute()
+        public RuntimeModuleAttribute(string moduleName)
         {
             if(typeof(IMainModule).IsAssignableFrom(typeof(T)))
             {
                 runInternal = typeof(T).GetMethod(nameof(IMainModule.Run), BindingFlags.Static | BindingFlags.Public)?
                     .CreateDelegate<RunDelegate>() ?? null;
             }
+            this.moduleName = moduleName;
         }
         
         /// <summary>

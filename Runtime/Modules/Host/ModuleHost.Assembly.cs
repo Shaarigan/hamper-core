@@ -17,7 +17,7 @@ namespace Soe.Runtime
         /// <summary>
         /// Determines a special isolated context to load modules into
         /// </summary>
-        private class ModuleContext : AssemblyLoadContext
+        private class ModuleContainer : AssemblyLoadContext
         {
             /// <inheritdoc/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
