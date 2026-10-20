@@ -83,7 +83,11 @@ namespace Soe.Runtime
         {
             if (commandOptions.TryFindOption(fragment.Name, out Option option))
             {
-                if (option.FlagSet(OptionFlags.Alias))
+                if (option.FlagSet(OptionFlags.Verb))
+                {
+                    // Option is a verb, ignore
+                }
+                else if (option.FlagSet(OptionFlags.Alias))
                 {
                     if (option.Parameter != null)
                     {

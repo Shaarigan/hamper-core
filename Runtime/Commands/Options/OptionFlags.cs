@@ -34,6 +34,14 @@ namespace Soe.Runtime
         /// <summary>
         /// The option is an alias for the option defined in <see cref="Option.Parameter"/>
         /// </summary>
-        Alias = 0x10
+        Alias = 0x10,
+        /// <summary>
+        /// The option is a verb value. This flag will not have any effect while parsing
+        /// </summary>
+        Verb = 0x20,
+        /// <summary>
+        /// The option won't be displayed in the header. This flag will not have any effect while parsing
+        /// </summary>
+        NoHeader = 0x40
     }
 }

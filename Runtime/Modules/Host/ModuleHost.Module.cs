@@ -4,6 +4,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Soe.Runtime
 {
@@ -93,6 +94,7 @@ namespace Soe.Runtime
             /// </summary>
             public bool IsMainModule
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get { return module.IsMainModule; }
             }
 
@@ -105,6 +107,7 @@ namespace Soe.Runtime
             /// <summary>
             /// Executes this modules load routine
             /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Load()
             {
                 module.Load();
@@ -113,15 +116,19 @@ namespace Soe.Runtime
             /// <summary>
             /// Executes this module's entry point
             /// </summary>
-            /// <param name="args">Additional data passed to the module in order to modify its behavior</param>
-            public void Run(string[] args)
+            /// <param name="args">A source of command line arguments applied to the module</param>
+            /// <returns>The return code of the execution</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Run<Source>(ref Source args)
+                where Source : struct, IStreamSource
             {
-                module.Run(args);
+                return module.Run(ref args);
             }
 
             /// <summary>
             /// Executes this modules release routine
             /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Unload()
             {
                 module.Unload();

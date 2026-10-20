@@ -20,7 +20,7 @@ namespace System
         [InlineArray(16)]
         private struct HashMem
         {
-            private const int DefaultCapacity = 8;
+            private const int DefaultCapacity = 16;
             private byte element0;
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -10,6 +10,7 @@ namespace Soe.Runtime
     /// </summary>
     /// <param name="name">The short- or long-name of this command</param>
     /// <param name="flags"><see cref="OptionFlags"/> controlling the behavior</param>
+    /// <param name="description">An optional description provided to this option</param>
     /// <param name="parameter">An optional string parameter reserved for conditional parsing</param>
     [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
     #if EXPORT_HAMPER_CORE_RUNTIME_COMMANDS
@@ -17,7 +18,7 @@ namespace Soe.Runtime
     #else
     internal
     #endif
-    readonly struct Option(string name, OptionFlags flags, string? parameter = null)
+    readonly struct Option(string name, OptionFlags flags, string? description = null, string? parameter = null)
     {
         /// <summary>
         /// Gets the name of this option
@@ -35,6 +36,15 @@ namespace Soe.Runtime
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return flags; }
+        }
+        
+        /// <summary>
+        /// Gets an optional description of this option
+        /// </summary>
+        public string? Description
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return description; }
         }
 
         /// <summary>

@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Soe.Runtime
 {
@@ -24,8 +25,7 @@ namespace Soe.Runtime
     #endif
         where T : IRuntimeModule
     {
-        private delegate void RunDelegate(string[] args);
-        private readonly RunDelegate? runInternal;
+        
         private readonly string moduleName;
         
         /// <summary>
@@ -51,7 +51,7 @@ namespace Soe.Runtime
         #endif
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return (runInternal != null); }
+            get { return typeof(IMainModule).IsAssignableFrom(typeof(T)); }
         }
 
         /// <summary>
@@ -61,11 +61,6 @@ namespace Soe.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RuntimeModuleAttribute(string moduleName)
         {
-            if(typeof(IMainModule).IsAssignableFrom(typeof(T)))
-            {
-                runInternal = typeof(T).GetMethod(nameof(IMainModule.Run), BindingFlags.Static | BindingFlags.Public)?
-                    .CreateDelegate<RunDelegate>() ?? null;
-            }
             this.moduleName = moduleName;
         }
         
@@ -85,18 +80,20 @@ namespace Soe.Runtime
         /// <summary>
         /// Executes this module's entry point
         /// </summary>
-        /// <param name="args">Additional data passed to the module in order to modify its behavior</param>
+        /// <param name="args">A source of command line arguments applied to the module</param>
+        /// <returns>The return code of the execution</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         #if COMPILER_FLAG_RUNTIME_MODULE
-        public void Run(string[] args)
+        public int Run<Source>(ref Source args)
         #else
-        public override void Run(string[] args)
+        public override int Run<Source>(ref Source args)
         #endif
         {
             if (IsMainModule)
             {
-                runInternal!(args);
+                MethodInfo? mi = typeof(T).GetMethod(nameof(IMainModule.Run), BindingFlags.Static | BindingFlags.Public);
             }
+            return -1;
         }
         
         /// <summary>

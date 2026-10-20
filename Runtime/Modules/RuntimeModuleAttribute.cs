@@ -1,6 +1,8 @@
 // Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license
 
+using System.Text;
+
 namespace Soe.Runtime
 {
     /// <summary>
@@ -33,8 +35,10 @@ namespace Soe.Runtime
         /// <summary>
         /// Executes this module's entry point
         /// </summary>
-        /// <param name="args">Additional data passed to the module in order to modify its behavior</param>
-        public abstract void Run(string[] args);
+        /// <param name="args">A source of command line arguments applied to the module</param>
+        /// <returns>The return code of the execution</returns>
+        public abstract int Run<Source>(ref Source args)
+            where Source : struct, IStreamSource;
         
         /// <summary>
         /// Executes this modules release routine
