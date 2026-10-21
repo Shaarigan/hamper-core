@@ -4,7 +4,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace System.Buffers
+namespace Soe.Pooling
 {
     /// <summary>
     /// Provides a resource pool for reusable instances of <typeef name="StringBuilder"/>

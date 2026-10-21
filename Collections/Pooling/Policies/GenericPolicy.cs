@@ -2,44 +2,46 @@
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
 using System.Runtime.CompilerServices;
-using System.Text;
 
-namespace System.Buffers
+namespace Soe.Pooling
 {
     /// <summary>
-    /// A policy managing instances of type <typeef name="StringBuilder"/>
+    /// A generic pooling policy over type <typeparamref name="T"/>
     /// </summary>
+    /// <typeparam name="T">A type that contains the standard .ctor</typeparam>
     #if HAMPER_CORE_SHARP
     public
     #else
     internal
     #endif
-    readonly struct StringBuilderPolicy : IPoolPolicy<StringBuilder>
+    readonly struct GenericPolicy<T> : IPoolPolicy<T>
+        where T : class, new()
     {
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public StringBuilder CreateInstance()
+        public T CreateInstance()
         {
-            return new StringBuilder(32);
+            return new T();
         }
 
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void OnDispose(StringBuilder instance)
+        public void OnDispose(T instance)
         {
-            instance.Clear();
+            if (instance is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
 
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void OnRent(ref StringBuilder instance)
+        public void OnRent(ref T instance)
         { }
 
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void OnReturn(ref StringBuilder instance)
-        {
-            instance.Clear();
-        }
+        public void OnReturn(ref T instance)
+        { }
     }
 }

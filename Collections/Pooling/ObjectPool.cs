@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using Soe.Collections.Inline;
 using Soe.Threading;
 
-namespace System.Buffers
+namespace Soe.Pooling
 {
     /// <summary>
     /// Provides a resource pool that enables reusing instances of type <typeparamref name="T"/>

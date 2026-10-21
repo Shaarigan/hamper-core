@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace System.Buffers
+namespace Soe.Pooling
 {
     /// <summary>
     /// Manages a single instance of type <typeparamref name="T"/> from the given pool

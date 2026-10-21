@@ -1,10 +1,10 @@
-﻿// Copyright (C) 2017 Schroedinger Entertainment
-// Distributed under the Schroedinger Entertainment EULA (See EULA.md for details)
+﻿// Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
+// Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Soe.Parsing;
+using Soe.Pooling;
 
 namespace Soe.Runtime
 {
@@ -102,7 +102,7 @@ namespace Soe.Runtime
                     return true;
                 }
             }
-            else if (!options.HasFlag(CommandReaderOptions.IgnoreMatch))
+            if (!options.HasFlag(CommandReaderOptions.IgnoreMatch))
             {
                 fragment.Type = CommandToken.Unknown;
             }

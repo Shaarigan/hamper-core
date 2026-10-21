@@ -177,6 +177,32 @@ namespace Soe.Runtime
             RuntimeModule = Ref<RuntimeModule>.CreateEmpty(); 
             return false;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Find(string moduleName, out RuntimeModule module)
+        {
+            int index = (int)(moduleName.ToLowerInvariant().Fnv32() & moduloMask);
+            if (count > 0)
+            {
+                int distance = 0;
+                for (int length = modules?.Length ?? 0; distance < length; distance++, index = (index + 1) & moduloMask)
+                {
+                    if (modules![index].IsValid)
+                    {
+                        if (string.Equals(moduleName, modules[index].ModuleName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            module = modules[index];
+                            return true;
+                        }
+                        else if (distance > GetDistance(index))
+                            break;
+                    }
+                    else break;
+                }
+            }
+            module = default;
+            return false;
+        }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static int GetDistance(int index)
