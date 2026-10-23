@@ -14,7 +14,7 @@ namespace Soe.Reactive
     #else
     internal
     #endif
-    interface ISubscriptionStrategy<T>
+    interface ISubscriptionStrategy<T> : IDisposable
     {
         /// <summary>
         /// Gets the amount of observers managed by this object
@@ -74,7 +74,7 @@ namespace Soe.Reactive
     #else
     internal
     #endif
-    interface ISubscriptionStrategy<TKey, TValue>
+    interface ISubscriptionStrategy<TKey, TValue> : IDisposable
     {
         /// <summary>
         /// Gets the amount of observers managed by this object

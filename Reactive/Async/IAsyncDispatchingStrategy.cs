@@ -15,7 +15,7 @@ namespace Soe.Reactive
     #else
     internal
     #endif
-    interface IAsyncDispatchingStrategy<T>
+    interface IAsyncDispatchingStrategy<T> : IDisposable
     {
         /// <summary>
         /// Provides the underlying observers with notification data asynchronously
