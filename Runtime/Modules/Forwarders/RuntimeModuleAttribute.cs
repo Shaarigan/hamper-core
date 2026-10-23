@@ -25,6 +25,8 @@ namespace Soe.Runtime
     #endif
         where T : IRuntimeModule
     {
+        private delegate int RunDelegate<Source>(ref Source args)
+            where Source : struct, IStreamSource;
         
         private readonly string moduleName;
         
@@ -92,8 +94,15 @@ namespace Soe.Runtime
             if (IsMainModule)
             {
                 MethodInfo? mi = typeof(T).GetMethod(nameof(IMainModule.Run), BindingFlags.Static | BindingFlags.Public);
+                mi = mi?.MakeGenericMethod(typeof(Source));
+
+                if(mi != null)
+                {
+                    return mi.CreateDelegate<RunDelegate<Source>>()(ref args);
+                }
             }
-            return -1;
+            Application.Log(VerbosityFlags.Error, SeverityFlags.None, "Executing a module with no entry point defined");
+            return ReturnCode.Error;
         }
         
         /// <summary>

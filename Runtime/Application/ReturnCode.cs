@@ -17,6 +17,15 @@ namespace Soe.Runtime
     #endif
     readonly struct ReturnCode : IEquatable<ReturnCode>
     {
+        /// <summary>
+        /// The action or operation lead to a generic error
+        /// </summary>
+        public static readonly ReturnCode Error = new ReturnCode(-1);
+        /// <summary>
+        /// The action or operation was successful
+        /// </summary>
+        public static readonly ReturnCode Success = new ReturnCode(0);
+        
         [FieldOffset(0)]
         private readonly int value;
         

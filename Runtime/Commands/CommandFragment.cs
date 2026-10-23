@@ -1,6 +1,7 @@
 ﻿// Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
+using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace Soe.Runtime
@@ -74,6 +75,7 @@ namespace Soe.Runtime
         /// <summary>
         /// Returns the contained raw data as bool value
         /// </summary>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToBoolean(out bool result)
         {
@@ -90,6 +92,7 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="result">The converted value</param>
         /// <returns>True if conversion was successful, false otherwise</returns>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToInteger(out Int16 result)
         {
@@ -109,6 +112,7 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="result">The converted value</param>
         /// <returns>True if conversion was successful, false otherwise</returns>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToInteger(out UInt16 result)
         {
@@ -128,6 +132,7 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="result">The converted value</param>
         /// <returns>True if conversion was successful, false otherwise</returns>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToInteger(out Int32 result)
         {
@@ -147,6 +152,7 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="result">The converted value</param>
         /// <returns>True if conversion was successful, false otherwise</returns>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToInteger(out UInt32 result)
         {
@@ -166,6 +172,7 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="result">The converted value</param>
         /// <returns>True if conversion was successful, false otherwise</returns>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToInteger(out Int64 result)
         {
@@ -185,6 +192,7 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="result">The converted value</param>
         /// <returns>True if conversion was successful, false otherwise</returns>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToInteger(out UInt64 result)
         {
@@ -204,6 +212,7 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="result">The converted value</param>
         /// <returns>True if conversion was successful, false otherwise</returns>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToInteger(out Decimal result)
         {
@@ -220,6 +229,7 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="result">The converted value</param>
         /// <returns>True if conversion was successful, false otherwise</returns>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToSingle(out float result)
         {
@@ -240,6 +250,7 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="result">The converted value</param>
         /// <returns>True if conversion was successful, false otherwise</returns>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToDouble(out double result)
         {
@@ -260,6 +271,7 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="result">The converted value</param>
         /// <returns>True if conversion was successful, false otherwise</returns>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToDecimal(out Decimal result)
         {
@@ -274,6 +286,7 @@ namespace Soe.Runtime
         /// <summary>
         /// Returns the contained raw data as .NET string value
         /// </summary>
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString()
         {
