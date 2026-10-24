@@ -20,8 +20,17 @@ namespace Soe.Parsing
         where TokenType : struct, IComparable, IConvertible
         where Source : struct, IStreamSource
     {
-        private Source source;
         private EmbeddedList<int, PoolArray<int>> buffer;
+        
+        private Source source;
+        /// <summary>
+        /// Gets the current source parsed
+        /// </summary>
+        public Source StreamSource
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return source; }
+        }
 
         private int position;
         /// <summary>

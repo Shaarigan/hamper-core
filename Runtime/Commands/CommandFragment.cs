@@ -3,6 +3,8 @@
 
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
+using System.Text;
+using Soe.Parsing;
 
 namespace Soe.Runtime
 {
@@ -14,8 +16,13 @@ namespace Soe.Runtime
     #else
     internal
     #endif
-    struct CommandFragment
+    struct CommandFragment<Source>
+        where Source : struct, IStreamSource
     {
+        private CommandReader<Source> source;
+        private int nameLength;
+        private int valueLength;
+        
         private CommandToken type;
         /// <summary>
         /// Returns this fragments type
@@ -28,28 +35,22 @@ namespace Soe.Runtime
             internal set { type = value; }
         }
 
-        private string name;
         /// <summary>
         /// Returns this fragments property name if any
         /// </summary>
-        public string Name
+        public CharacterSource<TextBuffer> Name
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return name; }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal set { name = value; }
+            get { return source.GetCharacterSource(0, nameLength); }
         }
-
-        private string rawValue;
+        
         /// <summary>
         /// Returns this fragments property value
         /// </summary>
-        public string RawValue
+        public CharacterSource<TextBuffer> RawValue
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return rawValue; }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal set { rawValue = value; }
+            get { return source.GetCharacterSource(nameLength, valueLength); }
         }
 
         /// <summary>
@@ -59,18 +60,25 @@ namespace Soe.Runtime
         public void Clear()
         {
             this.type = CommandToken.EndOfStream;
-            this.name = string.Empty;
-            this.rawValue = string.Empty;
+            this.source = null!;
+            this.nameLength = 0;
+            this.valueLength = 0;
         }
+        
+        // ReSharper disable ParameterHidesMember
+        
         /// <summary>
         /// Resets this fragment to default
         /// </summary>
-        public void Clear(CommandToken token)
+        public void Clear(CommandToken token, CommandReader<Source> source, int nameLength, int valueLength)
         {
             this.type = token;
-            this.name = string.Empty;
-            this.rawValue = string.Empty;
+            this.source = source;
+            this.nameLength = nameLength;
+            this.valueLength = valueLength;
         }
+        
+        // ReSharper restore ParameterHidesMember
 
         /// <summary>
         /// Returns the contained raw data as bool value
@@ -79,12 +87,23 @@ namespace Soe.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToBoolean(out bool result)
         {
-            if (!bool.TryParse(rawValue, out result))
+            if (valueLength >= 4 && valueLength <= 5)
+            {
+                Span<char> rawValue = stackalloc char[valueLength];
+                RawValue.CopyTo(nameLength, rawValue, valueLength);
+                
+                if (!bool.TryParse(rawValue, out result))
+                {
+                    result = false;
+                    return false;
+                }
+                else return true;
+            }
+            else
             {
                 result = false;
                 return false;
             }
-            else return true;
         }
 
         /// <summary>
@@ -275,12 +294,23 @@ namespace Soe.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToDecimal(out Decimal result)
         {
-            if (!Decimal.TryParse(rawValue, out result))
+            if(valueLength > 0 && valueLength <= 32)
+            {
+                Span<char> rawValue = stackalloc char[valueLength];
+                RawValue.CopyTo(nameLength, rawValue, valueLength);
+                
+                if (!Decimal.TryParse(rawValue, out result))
+                {
+                    result = 0;
+                    return false;
+                }
+                else return true;
+            }
+            else
             {
                 result = 0;
                 return false;
             }
-            else return true;
         }
 
         /// <summary>
@@ -290,7 +320,7 @@ namespace Soe.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString()
         {
-            return rawValue;
+            return RawValue.ToString();
         }
     }
 }

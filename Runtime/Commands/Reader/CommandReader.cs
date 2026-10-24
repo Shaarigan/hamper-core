@@ -27,7 +27,7 @@ namespace Soe.Runtime
 
         private CommandToken preserved;
         private BuildState<CommandProcessingFlags> state;
-        private readonly StringBuilder buffer;
+        private TextBuffer buffer;
 
         private readonly CommandReaderOptions options;
         /// <summary>
@@ -39,11 +39,11 @@ namespace Soe.Runtime
             get { return options; }
         }
         
-        private CommandFragment fragment;
+        private CommandFragment<Source> fragment;
         /// <summary>
         /// Returns the current parser fragment
         /// </summary>
-        public CommandFragment Fragment
+        public CommandFragment<Source> Fragment
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return fragment; }
@@ -59,7 +59,7 @@ namespace Soe.Runtime
         {
             this.options = options;
             this.state = new BuildState<CommandProcessingFlags>();
-            this.buffer = StringBuilderPool.Shared.Rent();
+            this.buffer = new TextBuffer(StringBuilderPool.Shared.Rent());
         }
 
         /// <inheritdoc/>
@@ -68,7 +68,7 @@ namespace Soe.Runtime
         {
             base.Initialize(source);
             this.preserved = CommandToken.EndOfStream;
-            this.buffer.Clear();
+            this.buffer.Clear(true);
             this.state.Clear();
         }
 
@@ -76,7 +76,8 @@ namespace Soe.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void Dispose()
         {
-            StringBuilderPool.Shared.Return(buffer);
+            StringBuilderPool.Shared.Return(buffer.Buffer);
+            buffer = default;
         }
         
         bool Evaluate(ReadOnlySpan<Option> commandOptions)
@@ -91,7 +92,11 @@ namespace Soe.Runtime
                 {
                     if (option.Parameter != null)
                     {
-                        fragment.Name = option.Parameter;
+                        buffer.Buffer.Remove(0, buffer.Offset);
+                        buffer.Buffer.Insert(0, option.Parameter);
+                        buffer.Offset = option.Parameter.Length;
+                        fragment.Clear(fragment.Type, this, buffer.Offset, 0);
+                        
                         return Evaluate(commandOptions);
                     }
                     else fragment.Type = CommandToken.Unknown;
@@ -110,6 +115,15 @@ namespace Soe.Runtime
         }
         
         /// <summary>
+        /// Generates a <see cref="CharacterSource{Source}"/> from the internal buffer
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public CharacterSource<TextBuffer> GetCharacterSource(int startIndex, int length)
+        {
+            return new CharacterSource<TextBuffer>(ref buffer, startIndex, length);
+        }
+        
+        /// <summary>
         /// Reads the next token from the input stream and advances it's position by one
         /// </summary>
         /// <param name="commandOptions">A sorted collection of options passed to the parser</param>
@@ -118,7 +132,13 @@ namespace Soe.Runtime
         /// in order to prevent performance impact while resolving parsed commands into the corresponding option</remarks>
         public bool Read(ReadOnlySpan<Option> commandOptions)
         {
-
+            if (preserved == CommandToken.CompoundArgument)
+            {
+                buffer.Buffer.Remove(0, buffer.Offset);
+                buffer.Offset = 0;
+            }
+            else buffer.Clear(true);
+            
         Next:
             switch ((CommandProcessingFlags)state)
             {
@@ -131,13 +151,13 @@ namespace Soe.Runtime
                         #region Argument
                         case CommandToken.ArgumentName:
                             {
-                                fragment.Clear(CommandToken.Command);
                                 if (options.HasFlag(CommandReaderOptions.IgnoreCase))
                                 {
-                                    fragment.Name = buffer.ToString()
-                                        .ToLowerInvariant();
+                                    for(int i = 0, length = buffer.Length; i < length; i++)
+                                        buffer[i] = char.ToLowerInvariant(buffer[i]);
                                 }
-                                else fragment.Name = buffer.ToString();
+                                buffer.Preserve();
+                                fragment.Clear(CommandToken.Command, this, buffer.Offset, 0);
                                 if (!Evaluate(commandOptions))
                                 {
                                     state.Set(CommandProcessingFlags.BeforeValue);
@@ -152,7 +172,6 @@ namespace Soe.Runtime
                             {
                                 bool hasCommandsLeft;
                                 
-                                fragment.Clear(CommandToken.Command);
                                 if(buffer.Length > 1)
                                 {
                                     preserved = CommandToken.CompoundArgument;
@@ -161,12 +180,10 @@ namespace Soe.Runtime
                                 else hasCommandsLeft = false;
                                 if (options.HasFlag(CommandReaderOptions.IgnoreCase))
                                 {
-                                    fragment.Name = buffer[0].ToString()
-                                        .ToLowerInvariant();
+                                    buffer[0] = char.ToLowerInvariant(buffer[0]);
                                 }
-                                else fragment.Name = buffer[0].ToString();
-                                buffer.Remove(0, 1);
-
+                                buffer.Offset++;
+                                fragment.Clear(CommandToken.Command, this, buffer.Offset, 0);
                                 if (!Evaluate(commandOptions) && !hasCommandsLeft)
                                 {
                                     state.Set(CommandProcessingFlags.BeforeValue);
@@ -179,8 +196,7 @@ namespace Soe.Runtime
                         #region Value
                         case CommandToken.ArgumentValue:
                             {
-                                fragment.Clear(CommandToken.Unknown);
-                                fragment.RawValue = buffer.ToString();
+                                fragment.Clear(CommandToken.Unknown, this, 0, buffer.Length);
                             }
                             return true;
                         #endregion
@@ -188,8 +204,7 @@ namespace Soe.Runtime
                         #region Verb
                         case CommandToken.FloatingValue:
                             {
-                                fragment.Clear(options.FlagSet(CommandReaderOptions.AllowVerbValues) ? CommandToken.Verb : CommandToken.Unknown);
-                                fragment.RawValue = buffer.ToString();
+                                fragment.Clear(options.FlagSet(CommandReaderOptions.AllowVerbValues) ? CommandToken.Verb : CommandToken.Unknown, this, 0, buffer.Length);
                             }
                             return true;
                         #endregion
@@ -215,7 +230,7 @@ namespace Soe.Runtime
                         case CommandToken.ArgumentValue:
                         case CommandToken.FloatingValue:
                             {
-                                fragment.RawValue = buffer.ToString();
+                                fragment.Clear(fragment.Type, this, buffer.Offset, buffer.Length -  buffer.Offset);
                                 state.Reset();
                             }
                             return true;

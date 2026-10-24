@@ -33,7 +33,7 @@ namespace Soe.Runtime
                         {
                             goto EndOfSequence;
                         }
-                        else buffer.AppendChar(StreamBuffer.GetNext());
+                        else buffer.Append(StreamBuffer.GetNext());
                         break;
                 }
             }
@@ -50,7 +50,7 @@ namespace Soe.Runtime
                     {
                         return (count > 0);
                     }
-                    else buffer.AppendChar(StreamBuffer.GetNext());
+                    else buffer.Append(StreamBuffer.GetNext());
                 }
                 else return (count > 0);
             }

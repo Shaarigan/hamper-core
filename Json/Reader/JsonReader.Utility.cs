@@ -38,7 +38,7 @@ namespace Soe.Json
                                 case (UInt32)Scripting.Punctuation.QuotationMark:
                                     {
                                         StreamBuffer.MoveNext();
-                                        buffer.AppendChar(StreamBuffer.GetNext());
+                                        buffer.Append(StreamBuffer.GetNext());
                                     }
                                     break;
                                 #endregion
@@ -47,7 +47,7 @@ namespace Soe.Json
                                 case (UInt32)Scripting.Punctuation.ReverseSolidus:
                                     {
                                         StreamBuffer.MoveNext();
-                                        buffer.AppendChar(StreamBuffer.GetNext());
+                                        buffer.Append(StreamBuffer.GetNext());
                                     }
                                     break;
                                 #endregion
@@ -81,7 +81,7 @@ namespace Soe.Json
                                                         #region Backspace
                                                         case (UInt32)Scripting.LowercaseLetter.B:
                                                             {
-                                                                buffer.AppendChar(BasicLatin.Control.Backspace);
+                                                                buffer.Append(BasicLatin.Control.Backspace);
                                                             }
                                                             break;
                                                         #endregion
@@ -89,7 +89,7 @@ namespace Soe.Json
                                                         #region CharacterTabulation
                                                         case (UInt32)Scripting.LowercaseLetter.T:
                                                             {
-                                                                buffer.AppendChar(Scripting.WhiteSpace.CharacterTabulation);
+                                                                buffer.Append(Scripting.WhiteSpace.CharacterTabulation);
                                                             }
                                                             break;
                                                         #endregion
@@ -97,7 +97,7 @@ namespace Soe.Json
                                                         #region LineFeed
                                                         case (UInt32)Scripting.LowercaseLetter.N:
                                                             {
-                                                                buffer.AppendChar(Scripting.LineBreak.LineFeed);
+                                                                buffer.Append(Scripting.LineBreak.LineFeed);
                                                             }
                                                             break;
                                                         #endregion
@@ -105,7 +105,7 @@ namespace Soe.Json
                                                         #region FormFeed
                                                         case (UInt32)Scripting.LowercaseLetter.F:
                                                             {
-                                                                buffer.AppendChar(BasicLatin.Control.FormFeed);
+                                                                buffer.Append(BasicLatin.Control.FormFeed);
                                                             }
                                                             break;
                                                         #endregion
@@ -113,7 +113,7 @@ namespace Soe.Json
                                                         #region CarriageReturn
                                                         case (UInt32)Scripting.LowercaseLetter.R:
                                                             {
-                                                                buffer.AppendChar(Scripting.LineBreak.CarriageReturn);
+                                                                buffer.Append(Scripting.LineBreak.CarriageReturn);
                                                             }
                                                             break;
                                                         #endregion
@@ -145,7 +145,7 @@ namespace Soe.Json
                             {
                                 return false;
                             }
-                            else buffer.AppendChar(StreamBuffer.GetNext());
+                            else buffer.Append(StreamBuffer.GetNext());
                         }
                         break;
                     #endregion
@@ -203,7 +203,7 @@ namespace Soe.Json
                 }
                 Position++;
             }
-            buffer.AppendChar(result);
+            buffer.Append(result);
             return true;
         }
 
@@ -212,7 +212,7 @@ namespace Soe.Json
         /// </summary>
         bool GetNumeric()
         {
-            buffer.AppendChar(StreamBuffer.GetNext());
+            buffer.Append(StreamBuffer.GetNext());
             for (bool onlyDigitsAllowed = false; !EndOfStream;)
             {
                 switch (StreamBuffer.Peek())
@@ -222,7 +222,7 @@ namespace Soe.Json
                         {
                             if (!onlyDigitsAllowed && IsNumericChar(StreamBuffer.Peek(1)))
                             {
-                                buffer.AppendChar(StreamBuffer.GetNext());
+                                buffer.Append(StreamBuffer.GetNext());
                                 onlyDigitsAllowed = true;
                             }
                             else return false;
@@ -241,12 +241,12 @@ namespace Soe.Json
                                 {
                                     if (IsNumericChar(StreamBuffer.Peek(2)))
                                     {
-                                        buffer.AppendChar(StreamBuffer.GetNext());
-                                        buffer.AppendChar(StreamBuffer.GetNext());
+                                        buffer.Append(StreamBuffer.GetNext());
+                                        buffer.Append(StreamBuffer.GetNext());
                                     }
                                     else return false;
                                 }
-                                else buffer.AppendChar(StreamBuffer.GetNext());
+                                else buffer.Append(StreamBuffer.GetNext());
                                 onlyDigitsAllowed = true;
                             }
                             else return false;
@@ -261,7 +261,7 @@ namespace Soe.Json
                             {
                                 return true;
                             }
-                            else buffer.AppendChar(StreamBuffer.GetNext());
+                            else buffer.Append(StreamBuffer.GetNext());
                         }
                         break;
                     #endregion

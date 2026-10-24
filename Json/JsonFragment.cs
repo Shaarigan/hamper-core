@@ -2,6 +2,8 @@
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
 using System.Runtime.CompilerServices;
+using System.Text;
+using Soe.Parsing;
 
 namespace Soe.Json
 {
@@ -13,8 +15,13 @@ namespace Soe.Json
     #else
     internal
     #endif
-    struct JsonFragment
+    struct JsonFragment<Source>
+        where Source : struct, IStreamSource
     {
+        private JsonReader<Source> source;
+        private int nameLength;
+        private int valueLength;
+        
         private JsonToken type;
         /// <summary>
         /// Returns this fragments type
@@ -26,32 +33,24 @@ namespace Soe.Json
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return type; }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal set { type = value; }
         }
 
-        private string name;
         /// <summary>
         /// Returns this fragments property name if any
         /// </summary>
-        public string Name
+        public CharacterSource<TextBuffer> Name
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return name; }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal set { name = value; }
+            get { return source.GetCharacterSource(0, nameLength); }
         }
-
-        private string rawValue;
+        
         /// <summary>
         /// Returns this fragments property value
         /// </summary>
-        public string RawValue
+        public CharacterSource<TextBuffer> RawValue
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return rawValue; }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal set { rawValue = value; }
+            get { return source.GetCharacterSource(nameLength, valueLength); }
         }
 
         /// <summary>
@@ -60,15 +59,22 @@ namespace Soe.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
-            this.type = JsonToken.Invalid;
-            this.name = string.Empty;
-            this.rawValue = string.Empty;
+            type = JsonToken.Invalid;
+            source = null!;
+            nameLength = 0;
+            valueLength = 0;
         }
+        
+        // ReSharper disable ParameterHidesMember
+        
         /// <summary>
         /// Resets this fragment to default
         /// </summary>
         /// <param name="token">One of (BeginObject, EndObject, BeginArray, EndArray, Null, Boolean, Numeric, String)</param>
-        public void Clear(JsonToken token)
+        /// <param name="source">The root source of this fragment</param>
+        /// <param name="nameLength">The length of the fragment name</param>
+        /// <param name="valueLength">The length of the fragment value</param>
+        public void Clear(JsonToken token, JsonReader<Source> source, int nameLength, int valueLength)
         {
             switch (token)
             {
@@ -82,26 +88,39 @@ namespace Soe.Json
                 case JsonToken.String:
                     {
                         this.type = token;
-                        this.name = string.Empty;
-                        this.rawValue = string.Empty;
+                        this.source = source;
+                        this.nameLength = nameLength;
+                        this.valueLength = valueLength;
                     }
                     break;
                 default: throw new ArgumentOutOfRangeException(nameof(token));
             }
         }
+        
+        // ReSharper restore ParameterHidesMember
 
         /// <summary>
         /// Returns the contained raw data as bool value
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToBoolean(out bool result)
         {
-            if (type != JsonToken.Boolean || !bool.TryParse(rawValue, out result))
+            if (valueLength >= 4 && valueLength <= 5)
+            {
+                Span<char> rawValue = stackalloc char[valueLength];
+                RawValue.CopyTo(nameLength, rawValue, valueLength);
+                
+                if (type != JsonToken.Boolean || !bool.TryParse(rawValue, out result))
+                {
+                    result = false;
+                    return false;
+                }
+                else return true;
+            }
+            else
             {
                 result = false;
                 return false;
             }
-            else return true;
         }
 
         /// <summary>
@@ -279,15 +298,25 @@ namespace Soe.Json
         /// </summary>
         /// <param name="result">The converted value</param>
         /// <returns>True if conversion was successful, false otherwise</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ToDecimal(out Decimal result)
         {
-            if (type != JsonToken.Numeric || !Decimal.TryParse(rawValue, out result))
+            if(valueLength > 0 && valueLength <= 32)
+            {
+                Span<char> rawValue = stackalloc char[valueLength];
+                RawValue.CopyTo(nameLength, rawValue, valueLength);
+                
+                if (type != JsonToken.Numeric || !Decimal.TryParse(rawValue, out result))
+                {
+                    result = 0;
+                    return false;
+                }
+                else return true;
+            }
+            else
             {
                 result = 0;
                 return false;
             }
-            else return true;
         }
 
         /// <summary>
@@ -301,7 +330,7 @@ namespace Soe.Json
                 case JsonToken.Null: return type.ToString();
                 case JsonToken.Boolean:
                 case JsonToken.Numeric:
-                case JsonToken.String: return rawValue;
+                case JsonToken.String: return Name.ToString();
                 default: return string.Empty;
             }
         }

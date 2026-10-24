@@ -50,7 +50,7 @@ namespace Soe.Runtime
                                     buffer.Clear();
                                     while (!EndOfStream)
                                     {
-                                        buffer.AppendChar(StreamBuffer.GetNext());
+                                        buffer.Append(StreamBuffer.GetNext());
                                     }
                                     token = CommandToken.Verb;
                                     return true;
