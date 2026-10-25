@@ -17,7 +17,7 @@ namespace Soe.Parsing
     #else
     internal
     #endif
-    struct TextBuffer(StringBuilder buffer) : ICharacterSource
+    struct TextBuffer(StringBuilder buffer) : ITextSource
     {
         /// <summary>
         /// Gets the internal buffer instance
@@ -185,7 +185,7 @@ namespace Soe.Parsing
         
         #region ICharacterSource Members
         /// <inheritdoc/>
-        char ICharacterSource.this[int index]
+        char ITextSource.this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return buffer[index]; }
@@ -194,12 +194,12 @@ namespace Soe.Parsing
         }
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void ICharacterSource.CopyTo(int sourceIndex, Span<char> destination, int count)
+        void ITextSource.CopyTo(int sourceIndex, Span<char> destination, int count)
         {
             buffer.CopyTo(sourceIndex, destination, count);
         }
         /// <inheritdoc/>
-        bool ICharacterSource.Equals(ReadOnlySpan<char> value, int startIndex, int length)
+        bool ITextSource.Equals(ReadOnlySpan<char> value, int startIndex, int length)
         {
             if (startIndex < 0 || length < 0 || startIndex > Length - length)
             {
@@ -221,7 +221,7 @@ namespace Soe.Parsing
         }
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        string ICharacterSource.ToString(int startIndex, int length)
+        string ITextSource.ToString(int startIndex, int length)
         {
             return buffer.ToString(startIndex, length);
         }

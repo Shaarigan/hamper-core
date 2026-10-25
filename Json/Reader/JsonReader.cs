@@ -17,7 +17,7 @@ namespace Soe.Json
     #else
     internal
     #endif
-    partial class JsonReader<Source> : TrackedTokenReader<JsonToken, Source>
+    partial class JsonReader<Source> : TrackedTokenReader<JsonToken, Source>, ITextProvider<TextBuffer>
         where Source : struct, IStreamSource
     {
         enum JsonProcessingFlags : byte
@@ -56,11 +56,11 @@ namespace Soe.Json
             get { return errors.AsSpan(); }
         }
 
-        private JsonFragment<Source> fragment;
+        private JsonFragment fragment;
         /// <summary>
         /// Returns the current parser fragment
         /// </summary>
-        public JsonFragment<Source> Fragment
+        public JsonFragment Fragment
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return fragment; }
@@ -91,7 +91,7 @@ namespace Soe.Json
         public override void Initialize(Source source)
         {
             base.Initialize(source);
-            this.fragment.Clear();
+            this.fragment = default;
             this.buffer.Clear(true);
             this.errors.Clear();
             this.state.Clear();
@@ -102,21 +102,12 @@ namespace Soe.Json
         public override void Dispose()
         {
             errors.Dispose();
-            fragment.Clear();
             StringBuilderPool.Shared.Return(buffer.Buffer);
+            fragment = default;
             buffer = default;
             state.Dispose();
         }
 
-        /// <summary>
-        /// Generates a <see cref="CharacterSource{Source}"/> from the internal buffer
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CharacterSource<TextBuffer> GetCharacterSource(int startIndex, int length)
-        {
-            return new CharacterSource<TextBuffer>(ref buffer, startIndex, length);
-        }
-        
         /// <summary>
         /// Reads the next token from the input stream and advances it's position by one
         /// </summary>
@@ -139,7 +130,7 @@ namespace Soe.Json
                             case JsonToken.BeginObject:
                                 {
                                     state.Set(JsonProcessingFlags.BeforeProperty);
-                                    fragment.Clear(token, this, 0, 0);
+                                    fragment = new JsonFragment(token, this, 0, 0);
                                 }
                                 return true;
                             #endregion
@@ -148,7 +139,7 @@ namespace Soe.Json
                             case JsonToken.BeginArray:
                                 {
                                     state.Set(JsonProcessingFlags.BeforeElement);
-                                    fragment.Clear(token, this, 0, 0);
+                                    fragment = new JsonFragment(token, this, 0, 0);
                                 }
                                 return true;
                             #endregion
@@ -157,7 +148,7 @@ namespace Soe.Json
                             default:
                                 {
                                     errors.Add(string.Format(ErrorCodes.InvalidJsonRoot, match.Start.Line, match.Start.Column, token));
-                                    fragment.Clear();
+                                    fragment = new JsonFragment();
                                     state.Remove();
                                 }
                                 return false;
@@ -177,7 +168,7 @@ namespace Soe.Json
                                 {
                                     state.Change(JsonProcessingFlags.AfterElement);
                                     state.Add(JsonProcessingFlags.BeforeProperty);
-                                    fragment.Clear(token, this, 0, 0);
+                                    fragment = new JsonFragment(token, this, 0, 0);
                                 }
                                 return true;
                             #endregion
@@ -187,7 +178,7 @@ namespace Soe.Json
                                 {
                                     state.Change(JsonProcessingFlags.AfterElement);
                                     state.Add(JsonProcessingFlags.BeforeElement);
-                                    fragment.Clear(token, this, 0, 0);
+                                    fragment = new JsonFragment(token, this, 0, 0);
                                 }
                                 return true;
                             #endregion
@@ -196,7 +187,7 @@ namespace Soe.Json
                             case JsonToken.Null:
                                 {
                                     state.Change(JsonProcessingFlags.AfterElement);
-                                    fragment.Clear(token, this, 0, 0);
+                                    fragment = new JsonFragment(token, this, 0, 0);
                                 }
                                 return true;
                             #endregion
@@ -206,7 +197,7 @@ namespace Soe.Json
                             case JsonToken.False:
                                 {
                                     state.Change(JsonProcessingFlags.AfterElement);
-                                    fragment.Clear(JsonToken.Boolean, this, 0, buffer.Length);
+                                    fragment = new JsonFragment(JsonToken.Boolean, this, 0, buffer.Length);
                                 }
                                 return true;
                             #endregion
@@ -219,7 +210,7 @@ namespace Soe.Json
                             case JsonToken.String:
                                 {
                                     state.Change(JsonProcessingFlags.AfterElement);
-                                    fragment.Clear(token, this, 0, buffer.Length);
+                                    fragment = new JsonFragment(token, this, 0, buffer.Length);
                                 }
                                 return true;
                             #endregion
@@ -232,7 +223,7 @@ namespace Soe.Json
                                         errors.Add(string.Format(ErrorCodes.UnexpectedItemSeparator, match.Start.Line, match.Start.Column));
                                     }
                                     state.Remove();
-                                    fragment.Clear(token, this, 0, 0);
+                                    fragment = new JsonFragment(token, this, 0, 0);
                                 }
                                 return true;
                             #endregion
@@ -241,7 +232,7 @@ namespace Soe.Json
                             default:
                                 {
                                     errors.Add(string.Format(ErrorCodes.InvalidArrayElement, match.Start.Line, match.Start.Column, token));
-                                    fragment.Clear();
+                                    fragment = new JsonFragment();
                                     state.Remove();
                                 }
                                 return false;
@@ -269,7 +260,7 @@ namespace Soe.Json
                             case JsonToken.EndArray:
                                 {
                                     state.Remove();
-                                    fragment.Clear(token, this, 0, 0);
+                                    fragment = new JsonFragment(token, this, 0, 0);
                                 }
                                 return true;
                             #endregion
@@ -278,7 +269,7 @@ namespace Soe.Json
                             default:
                                 {
                                     errors.Add(string.Format(ErrorCodes.InvalidArrayElement, match.Start.Line, match.Start.Column, token));
-                                    fragment.Clear();
+                                    fragment = new JsonFragment();
                                     state.Remove();
                                 }
                                 return false;
@@ -309,7 +300,7 @@ namespace Soe.Json
                                         errors.Add(string.Format(ErrorCodes.UnexpectedItemSeparator, match.Start.Line, match.Start.Column));
                                     }
                                     state.Remove();
-                                    fragment.Clear(token, this, 0, 0);
+                                    fragment = new JsonFragment(token, this, 0, 0);
                                 }
                                 return true;
                             #endregion
@@ -318,7 +309,7 @@ namespace Soe.Json
                             default:
                                 {
                                     errors.Add(string.Format(ErrorCodes.InvalidObjectProperty, match.Start.Line, match.Start.Column, token));
-                                    fragment.Clear();
+                                    fragment = new JsonFragment();
                                     state.Remove();
                                 }
                                 return false;
@@ -338,7 +329,7 @@ namespace Soe.Json
                                 {
                                     errors.Add(string.Format(ErrorCodes.IncompleteProperty, match.Start.Line, match.Start.Column));
                                     state.Remove();
-                                    fragment.Clear(token, this, 0, 0);
+                                    fragment = new JsonFragment(token, this, 0, 0);
                                 }
                                 return true;
                             #endregion
@@ -347,7 +338,7 @@ namespace Soe.Json
                             default:
                                 {
                                     errors.Add(string.Format(ErrorCodes.InvalidObjectProperty, match.Start.Line, match.Start.Column, token));
-                                    fragment.Clear();
+                                    fragment = new JsonFragment();
                                     state.Remove();
                                 }
                                 return false;
@@ -362,7 +353,7 @@ namespace Soe.Json
                                 {
                                     state.Change(JsonProcessingFlags.AfterProperty);
                                     state.Add(JsonProcessingFlags.BeforeProperty);
-                                    fragment.Clear(token, this, buffer.Offset, 0);
+                                    fragment = new JsonFragment(token, this, buffer.Offset, 0);
                                 }
                                 return true;
                             #endregion
@@ -372,7 +363,7 @@ namespace Soe.Json
                                 {
                                     state.Change(JsonProcessingFlags.AfterProperty);
                                     state.Add(JsonProcessingFlags.BeforeElement);
-                                    fragment.Clear(token, this, buffer.Offset, 0);
+                                    fragment = new JsonFragment(token, this, buffer.Offset, 0);
                                 }
                                 return true;
                             #endregion
@@ -381,7 +372,7 @@ namespace Soe.Json
                             case JsonToken.Null:
                                 {
                                     state.Change(JsonProcessingFlags.AfterProperty);
-                                    fragment.Clear(token, this, buffer.Offset, 0);
+                                    fragment = new JsonFragment(token, this, buffer.Offset, 0);
                                 }
                                 return true;
                             #endregion
@@ -391,7 +382,7 @@ namespace Soe.Json
                             case JsonToken.False:
                                 {
                                     state.Change(JsonProcessingFlags.AfterProperty);
-                                    fragment.Clear(JsonToken.Boolean, this, buffer.Offset, buffer.Length - buffer.Offset);
+                                    fragment = new JsonFragment(JsonToken.Boolean, this, buffer.Offset, buffer.Length - buffer.Offset);
                                 }
                                 return true;
                             #endregion
@@ -404,7 +395,7 @@ namespace Soe.Json
                             case JsonToken.String:
                                 {
                                     state.Change(JsonProcessingFlags.AfterProperty);
-                                    fragment.Clear(token, this, buffer.Offset, buffer.Length - buffer.Offset);
+                                    fragment = new JsonFragment(token, this, buffer.Offset, buffer.Length - buffer.Offset);
                                 }
                                 return true;
                             #endregion
@@ -414,7 +405,7 @@ namespace Soe.Json
                                 {
                                     errors.Add(string.Format(ErrorCodes.IncompleteProperty, match.Start.Line, match.Start.Column));
                                     state.Remove();
-                                    fragment.Clear(JsonToken.Boolean, this, 0, 0);
+                                    fragment = new JsonFragment(JsonToken.Boolean, this, 0, 0);
                                 }
                                 return true;
                             #endregion
@@ -423,7 +414,7 @@ namespace Soe.Json
                             default:
                                 {
                                     errors.Add(string.Format(ErrorCodes.InvalidObjectProperty, match.Start.Line, match.Start.Column, token));
-                                    fragment.Clear();
+                                    fragment = new JsonFragment();
                                     state.Remove();
                                 }
                                 return false;
@@ -451,7 +442,7 @@ namespace Soe.Json
                             case JsonToken.EndObject:
                                 {
                                     state.Remove();
-                                    fragment.Clear(token, this, 0, 0);
+                                    fragment = new JsonFragment(token, this, 0, 0);
                                 }
                                 return true;
                             #endregion
@@ -460,7 +451,7 @@ namespace Soe.Json
                             default:
                                 {
                                     errors.Add(string.Format(ErrorCodes.InvalidObjectProperty, match.Start.Line, match.Start.Column, token));
-                                    fragment.Clear();
+                                    fragment = new JsonFragment();
                                     state.Remove();
                                 }
                                 return false;
@@ -472,13 +463,22 @@ namespace Soe.Json
                 #region AfterJson
                 case JsonProcessingFlags.AfterJson:
                     {
-                        fragment.Clear();
+                        fragment = new JsonFragment();
                     }
                     return false;
                 #endregion
             }
             throw new NotImplementedException();
         }
+        
+        #region ITextProvider Members
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        TextSource<TextBuffer> ITextProvider<TextBuffer>.GetSource(int startIndex, int length)
+        {
+            return new TextSource<TextBuffer>(ref buffer, startIndex, length);
+        }
+        #endregion
 
         public override string ToString()
         {
@@ -486,7 +486,7 @@ namespace Soe.Json
             (
                 "Token: ", fragment.Type, 
                 (fragment.Name.Length > 0) ? string.Concat(", Name: ", fragment.Name.ToString()) : string.Empty,
-                (fragment.RawValue.Length > 0) ? string.Concat(", Value: ", fragment.RawValue.ToString()) : string.Empty
+                (fragment.Value.Length > 0) ? string.Concat(", Value: ", fragment.Value.ToString()) : string.Empty
             );
         }
     }

@@ -20,8 +20,8 @@ namespace Soe.Runtime
         /// <param name="name">The name of an element in this collection</param>
         /// <param name="result">The command matching the provided name</param>
         /// <returns>True if an element with the provided name was found, false otherwise</returns>
-        public static bool TryFindOption<Source>(this ReadOnlySpan<Option> options, CharacterSource<Source> name, out Option result)
-            where Source : ICharacterSource
+        public static bool TryFindOption<Source>(this ReadOnlySpan<Option> options, TextSource<Source> name, out Option result)
+            where Source : ITextSource
         {
             if(options.Length > 0)
             {

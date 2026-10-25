@@ -1,10 +1,10 @@
 ﻿// Licensed to Schroedinger Entertainment (SOE) under the terms of the AGPLv3
 // Licensed to you by SOE under the terms of the AGPLv3 or another OSI-approved license 
 
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Soe.Parsing;
+using ValueType = Soe.Parsing.ValueType;
 
 namespace Soe.Runtime
 {
@@ -16,311 +16,65 @@ namespace Soe.Runtime
     #else
     internal
     #endif
-    struct CommandFragment<Source>
-        where Source : struct, IStreamSource
+    readonly struct CommandFragment : IParserFragment<TextBuffer>
     {
-        private CommandReader<Source> source;
-        private int nameLength;
-        private int valueLength;
+        private readonly ITextProvider<TextBuffer> provider;
         
-        private CommandToken type;
+        private readonly CommandToken type;
         /// <summary>
-        /// Returns this fragments type
+        /// Gets the type of this fragment
         /// </summary>
         public CommandToken Type
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return type; }
+        }
+
+        private readonly int name;
+        /// <inheritdoc/>
+        public TextSource<TextBuffer> Name
+        {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal set { type = value; }
+            get { return provider.GetSource(0, name); }
+        }
+
+        private readonly int value;
+        /// <inheritdoc/>
+        public TextSource<TextBuffer> Value
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return provider.GetSource(name, value); }
         }
 
         /// <summary>
-        /// Returns this fragments property name if any
+        /// Initializes this fragment from the provided values
         /// </summary>
-        public CharacterSource<TextBuffer> Name
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return source.GetCharacterSource(0, nameLength); }
-        }
-        
-        /// <summary>
-        /// Returns this fragments property value
-        /// </summary>
-        public CharacterSource<TextBuffer> RawValue
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return source.GetCharacterSource(nameLength, valueLength); }
-        }
-
-        /// <summary>
-        /// Resets this fragment to default
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Clear()
-        {
-            this.type = CommandToken.EndOfStream;
-            this.source = null!;
-            this.nameLength = 0;
-            this.valueLength = 0;
-        }
-        
-        // ReSharper disable ParameterHidesMember
-        
-        /// <summary>
-        /// Resets this fragment to default
-        /// </summary>
-        public void Clear(CommandToken token, CommandReader<Source> source, int nameLength, int valueLength)
+        /// <param name="token">The token implementing this fragment</param>
+        /// <param name="provider">The root provider of this fragment</param>
+        /// <param name="name">The length of the fragment name</param>
+        /// <param name="value">The length of the fragment value</param>
+        internal CommandFragment(CommandToken token, ITextProvider<TextBuffer> provider, int name, int value)
         {
             this.type = token;
-            this.source = source;
-            this.nameLength = nameLength;
-            this.valueLength = valueLength;
+            this.provider = provider;
+            this.name = name;
+            this.value = value;
         }
-        
-        // ReSharper restore ParameterHidesMember
 
-        /// <summary>
-        /// Returns the contained raw data as bool value
-        /// </summary>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ToBoolean(out bool result)
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] 
+        public bool IsOfType(ValueType valueType)
         {
-            if (valueLength >= 4 && valueLength <= 5)
-            {
-                Span<char> rawValue = stackalloc char[valueLength];
-                RawValue.CopyTo(nameLength, rawValue, valueLength);
-                
-                if (!bool.TryParse(rawValue, out result))
-                {
-                    result = false;
-                    return false;
-                }
-                else return true;
-            }
-            else
-            {
-                result = false;
-                return false;
-            }
+            return true;
         }
 
         /// <summary>
-        /// Converts this fragment into the desired value type if applicable
+        /// Converts this fragments value to <see cref="String"/>
         /// </summary>
-        /// <param name="result">The converted value</param>
-        /// <returns>True if conversion was successful, false otherwise</returns>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ToInteger(out Int16 result)
-        {
-            if (ToDecimal(out Decimal tmp))
-            {
-                result = Decimal.ToInt16(tmp);
-                return true;
-            }
-            else
-            {
-                result = 0;
-                return false;
-            }
-        }
-        /// <summary>
-        /// Converts this fragment into the desired value type if applicable
-        /// </summary>
-        /// <param name="result">The converted value</param>
-        /// <returns>True if conversion was successful, false otherwise</returns>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ToInteger(out UInt16 result)
-        {
-            if (ToDecimal(out Decimal tmp))
-            {
-                result = Decimal.ToUInt16(tmp);
-                return true;
-            }
-            else
-            {
-                result = 0;
-                return false;
-            }
-        }
-        /// <summary>
-        /// Converts this fragment into the desired value type if applicable
-        /// </summary>
-        /// <param name="result">The converted value</param>
-        /// <returns>True if conversion was successful, false otherwise</returns>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ToInteger(out Int32 result)
-        {
-            if (ToDecimal(out Decimal tmp))
-            {
-                result = Decimal.ToInt32(tmp);
-                return true;
-            }
-            else
-            {
-                result = 0;
-                return false;
-            }
-        }
-        /// <summary>
-        /// Converts this fragment into the desired value type if applicable
-        /// </summary>
-        /// <param name="result">The converted value</param>
-        /// <returns>True if conversion was successful, false otherwise</returns>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ToInteger(out UInt32 result)
-        {
-            if (ToDecimal(out Decimal tmp))
-            {
-                result = Decimal.ToUInt32(tmp);
-                return true;
-            }
-            else
-            {
-                result = 0;
-                return false;
-            }
-        }
-        /// <summary>
-        /// Converts this fragment into the desired value type if applicable
-        /// </summary>
-        /// <param name="result">The converted value</param>
-        /// <returns>True if conversion was successful, false otherwise</returns>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ToInteger(out Int64 result)
-        {
-            if (ToDecimal(out Decimal tmp))
-            {
-                result = Decimal.ToInt64(tmp);
-                return true;
-            }
-            else
-            {
-                result = 0;
-                return false;
-            }
-        }
-        /// <summary>
-        /// Converts this fragment into the desired value type if applicable
-        /// </summary>
-        /// <param name="result">The converted value</param>
-        /// <returns>True if conversion was successful, false otherwise</returns>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ToInteger(out UInt64 result)
-        {
-            if (ToDecimal(out Decimal tmp))
-            {
-                result = Decimal.ToUInt64(tmp);
-                return true;
-            }
-            else
-            {
-                result = 0;
-                return false;
-            }
-        }
-        /// <summary>
-        /// Converts this fragment into the desired value type if applicable
-        /// </summary>
-        /// <param name="result">The converted value</param>
-        /// <returns>True if conversion was successful, false otherwise</returns>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ToInteger(out Decimal result)
-        {
-            if (ToDecimal(out result))
-            {
-                result = Decimal.Truncate(result);
-                return true;
-            }
-            else return false;
-        }
-
-        /// <summary>
-        /// Converts this fragment into the desired value type if applicable
-        /// </summary>
-        /// <param name="result">The converted value</param>
-        /// <returns>True if conversion was successful, false otherwise</returns>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ToSingle(out float result)
-        {
-            if (ToDecimal(out Decimal tmp))
-            {
-                result = Decimal.ToSingle(tmp);
-                return true;
-            }
-            else
-            {
-                result = 0;
-                return false;
-            }
-        }
-        
-        /// <summary>
-        /// Converts this fragment into the desired value type if applicable
-        /// </summary>
-        /// <param name="result">The converted value</param>
-        /// <returns>True if conversion was successful, false otherwise</returns>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ToDouble(out double result)
-        {
-            if (ToDecimal(out Decimal tmp))
-            {
-                result = Decimal.ToDouble(tmp);
-                return true;
-            }
-            else
-            {
-                result = 0;
-                return false;
-            }
-        }
-        
-        /// <summary>
-        /// Converts this fragment into the desired value type if applicable
-        /// </summary>
-        /// <param name="result">The converted value</param>
-        /// <returns>True if conversion was successful, false otherwise</returns>
-        [Pure]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool ToDecimal(out Decimal result)
-        {
-            if(valueLength > 0 && valueLength <= 32)
-            {
-                Span<char> rawValue = stackalloc char[valueLength];
-                RawValue.CopyTo(nameLength, rawValue, valueLength);
-                
-                if (!Decimal.TryParse(rawValue, out result))
-                {
-                    result = 0;
-                    return false;
-                }
-                else return true;
-            }
-            else
-            {
-                result = 0;
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Returns the contained raw data as .NET string value
-        /// </summary>
-        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString()
         {
-            return RawValue.ToString();
+            return Value.ToString();
         }
     }
 }

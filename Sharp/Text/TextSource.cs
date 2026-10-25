@@ -9,7 +9,7 @@ namespace System.Text
     /// <summary>
     /// Represents a mutable slice of a character buffer
     /// </summary>
-    /// <param name="source">An object instance implementing <see cref="ICharacterSource"/></param>
+    /// <param name="source">An object instance implementing <see cref="ITextSource"/></param>
     /// <param name="startIndex start index of the slice of this source</param>
     /// <param name="length">The length of the slice</param>
     [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -18,8 +18,8 @@ namespace System.Text
     #else
     internal
     #endif
-    readonly ref struct CharacterSource<Source>(ref Source source, int startIndex, int length)
-        where Source : ICharacterSource
+    readonly ref struct TextSource<Source>(ref Source source, int startIndex, int length)
+        where Source : ITextSource
     {
         private readonly ref Source source = ref source;
 
@@ -73,12 +73,10 @@ namespace System.Text
         /// <summary>
         /// Copies the characters from this slice to a destination <see cref="Char"/> span
         /// </summary>
-        /// <param name="sourceIndex">The starting position in this instance where characters will be copied from.
-        /// The index is zero-based.</param>
         /// <param name="destination">The writable span where characters will be copied</param>
         /// <param name="count">The number of characters to be copied</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(int sourceIndex, Span<char> destination, int count)
+        public void CopyTo(Span<char> destination, int count)
         {
             source.CopyTo(startIndex, destination, count);
         }

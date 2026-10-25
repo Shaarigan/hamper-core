@@ -13,7 +13,7 @@ namespace System.Text
     #else
     internal
     #endif
-    interface ICharacterSource
+    interface ITextSource
     {
         /// <summary>
         /// Gets or sets the UTF-16 character at the given index

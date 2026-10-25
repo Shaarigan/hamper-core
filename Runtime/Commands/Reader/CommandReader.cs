@@ -16,7 +16,7 @@ namespace Soe.Runtime
     #else
     internal
     #endif
-    partial class CommandReader<Source> : TokenReader<CommandToken, Source>
+    partial class CommandReader<Source> : TokenReader<CommandToken, Source>, ITextProvider<TextBuffer>
         where Source : struct, IStreamSource
     {
         enum CommandProcessingFlags : byte
@@ -39,11 +39,11 @@ namespace Soe.Runtime
             get { return options; }
         }
         
-        private CommandFragment<Source> fragment;
+        private CommandFragment fragment;
         /// <summary>
         /// Returns the current parser fragment
         /// </summary>
-        public CommandFragment<Source> Fragment
+        public CommandFragment Fragment
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return fragment; }
@@ -95,11 +95,11 @@ namespace Soe.Runtime
                         buffer.Buffer.Remove(0, buffer.Offset);
                         buffer.Buffer.Insert(0, option.Parameter);
                         buffer.Offset = option.Parameter.Length;
-                        fragment.Clear(fragment.Type, this, buffer.Offset, 0);
+                        fragment = new CommandFragment(fragment.Type, this, buffer.Offset, 0);
                         
                         return Evaluate(commandOptions);
                     }
-                    else fragment.Type = CommandToken.Unknown;
+                    else fragment = new CommandFragment(CommandToken.Unknown, this, buffer.Offset, 0);
                     return true;
                 }
                 else if (!option.FlagSet(OptionFlags.RequiresParameter) || option.FlagSet(OptionFlags.Flag))
@@ -109,18 +109,18 @@ namespace Soe.Runtime
             }
             if (!options.HasFlag(CommandReaderOptions.IgnoreMatch))
             {
-                fragment.Type = CommandToken.Unknown;
+                fragment = new CommandFragment(CommandToken.Unknown, this, buffer.Offset, 0);
             }
             return false;
         }
         
         /// <summary>
-        /// Generates a <see cref="CharacterSource{Source}"/> from the internal buffer
+        /// Generates a <see cref="TextSource{Source}"/> from the internal buffer
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CharacterSource<TextBuffer> GetCharacterSource(int startIndex, int length)
+        public TextSource<TextBuffer> GetCharacterSource(int startIndex, int length)
         {
-            return new CharacterSource<TextBuffer>(ref buffer, startIndex, length);
+            return new TextSource<TextBuffer>(ref buffer, startIndex, length);
         }
         
         /// <summary>
@@ -157,7 +157,7 @@ namespace Soe.Runtime
                                         buffer[i] = char.ToLowerInvariant(buffer[i]);
                                 }
                                 buffer.Preserve();
-                                fragment.Clear(CommandToken.Command, this, buffer.Offset, 0);
+                                fragment = new CommandFragment(CommandToken.Command, this, buffer.Offset, 0);
                                 if (!Evaluate(commandOptions))
                                 {
                                     state.Set(CommandProcessingFlags.BeforeValue);
@@ -183,7 +183,7 @@ namespace Soe.Runtime
                                     buffer[0] = char.ToLowerInvariant(buffer[0]);
                                 }
                                 buffer.Offset++;
-                                fragment.Clear(CommandToken.Command, this, buffer.Offset, 0);
+                                fragment = new CommandFragment(CommandToken.Command, this, buffer.Offset, 0);
                                 if (!Evaluate(commandOptions) && !hasCommandsLeft)
                                 {
                                     state.Set(CommandProcessingFlags.BeforeValue);
@@ -196,7 +196,7 @@ namespace Soe.Runtime
                         #region Value
                         case CommandToken.ArgumentValue:
                             {
-                                fragment.Clear(CommandToken.Unknown, this, 0, buffer.Length);
+                                fragment = new CommandFragment(CommandToken.Unknown, this, 0, buffer.Length);
                             }
                             return true;
                         #endregion
@@ -204,7 +204,7 @@ namespace Soe.Runtime
                         #region Verb
                         case CommandToken.FloatingValue:
                             {
-                                fragment.Clear(options.FlagSet(CommandReaderOptions.AllowVerbValues) ? CommandToken.Verb : CommandToken.Unknown, this, 0, buffer.Length);
+                                fragment = new CommandFragment(options.FlagSet(CommandReaderOptions.AllowVerbValues) ? CommandToken.Verb : CommandToken.Unknown, this, 0, buffer.Length);
                             }
                             return true;
                         #endregion
@@ -230,7 +230,7 @@ namespace Soe.Runtime
                         case CommandToken.ArgumentValue:
                         case CommandToken.FloatingValue:
                             {
-                                fragment.Clear(fragment.Type, this, buffer.Offset, buffer.Length -  buffer.Offset);
+                                fragment = new CommandFragment(fragment.Type, this, buffer.Offset, buffer.Length -  buffer.Offset);
                                 state.Reset();
                             }
                             return true;
@@ -271,5 +271,14 @@ namespace Soe.Runtime
             }
             else return base.Read();
         }
+
+        #region ITextProvider Members
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        TextSource<TextBuffer> ITextProvider<TextBuffer>.GetSource(int startIndex, int length)
+        {
+            return new TextSource<TextBuffer>(ref buffer, startIndex, length);
+        }
+        #endregion
     }
 }
