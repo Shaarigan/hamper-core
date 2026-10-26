@@ -132,7 +132,7 @@ namespace Soe.Runtime
         /// in order to prevent performance impact while resolving parsed commands into the corresponding option</remarks>
         public bool Read(ReadOnlySpan<Option> commandOptions)
         {
-            if (preserved == CommandToken.CompoundArgument)
+            if (preserved != CommandToken.EndOfStream)
             {
                 buffer.Buffer.Remove(0, buffer.Offset);
                 buffer.Offset = 0;

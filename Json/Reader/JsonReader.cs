@@ -479,15 +479,5 @@ namespace Soe.Json
             return new TextSource<TextBuffer>(ref buffer, startIndex, length);
         }
         #endregion
-
-        public override string ToString()
-        {
-            return string.Concat
-            (
-                "Token: ", fragment.Type, 
-                (fragment.Name.Length > 0) ? string.Concat(", Name: ", fragment.Name.ToString()) : string.Empty,
-                (fragment.Value.Length > 0) ? string.Concat(", Value: ", fragment.Value.ToString()) : string.Empty
-            );
-        }
     }
 }
