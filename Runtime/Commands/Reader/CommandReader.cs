@@ -82,7 +82,7 @@ namespace Soe.Runtime
         
         bool Evaluate(ReadOnlySpan<Option> commandOptions)
         {
-            if (commandOptions.TryFindOption(fragment.Name, out Option option))
+            if (commandOptions.TryFindOption(fragment.Key, out Option option))
             {
                 if (option.FlagSet(OptionFlags.Verb))
                 {

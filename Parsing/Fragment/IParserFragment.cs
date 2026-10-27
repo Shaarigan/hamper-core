@@ -17,9 +17,9 @@ namespace Soe.Parsing
         where Source : ITextSource
     {
         /// <summary>
-        /// Gets the name of this fragment
+        /// Gets the key of this fragment
         /// </summary>
-        TextSource<Source> Name
+        TextSource<Source> Key
         {
             get;
         }

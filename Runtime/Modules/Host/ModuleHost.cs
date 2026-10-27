@@ -6,7 +6,9 @@ using System.Runtime.CompilerServices;
 
 namespace Soe.Runtime
 {
-    
+    /// <summary>
+    /// Manages runtime modules within an application
+    /// </summary>
     #if EXPORT_HAMPER_CORE_RUNTIME_MODULES
     public
     #else
@@ -178,6 +180,12 @@ namespace Soe.Runtime
             return false;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="moduleName"></param>
+        /// <param name="module"></param>
+        /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Find(string moduleName, out RuntimeModule module)
         {
@@ -202,6 +210,19 @@ namespace Soe.Runtime
             }
             module = default;
             return false;
+        }
+
+        /// <summary>
+        /// Gets a collection of submodules belonging to the provided module
+        /// </summary>
+        /// <param name="module">A runtime module to get submodules for</param>
+        /// <returns>The collection of submodules</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<SubmoduleAttribute> GetSubmodules(in RuntimeModule module)
+        {
+            string moduleName = module.ModuleName;
+            return module.Assembly.GetCustomAttributes<SubmoduleAttribute>()
+                .Where(x => string.Equals(x.ParentModuleName, moduleName, StringComparison.InvariantCultureIgnoreCase));
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

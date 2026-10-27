@@ -30,12 +30,12 @@ namespace Soe.Runtime
             get { return type; }
         }
 
-        private readonly int name;
+        private readonly int key;
         /// <inheritdoc/>
-        public TextSource<TextBuffer> Name
+        public TextSource<TextBuffer> Key
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return provider.GetSource(0, name); }
+            get { return provider.GetSource(0, key); }
         }
 
         private readonly int value;
@@ -43,7 +43,7 @@ namespace Soe.Runtime
         public TextSource<TextBuffer> Value
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return provider.GetSource(name, value); }
+            get { return provider.GetSource(key, value); }
         }
 
         /// <summary>
@@ -51,13 +51,13 @@ namespace Soe.Runtime
         /// </summary>
         /// <param name="token">The token implementing this fragment</param>
         /// <param name="provider">The root provider of this fragment</param>
-        /// <param name="name">The length of the fragment name</param>
+        /// <param name="key">The length of the fragment name</param>
         /// <param name="value">The length of the fragment value</param>
-        internal CommandFragment(CommandToken token, ITextProvider<TextBuffer> provider, int name, int value)
+        internal CommandFragment(CommandToken token, ITextProvider<TextBuffer> provider, int key, int value)
         {
             this.type = token;
             this.provider = provider;
-            this.name = name;
+            this.key = key;
             this.value = value;
         }
 
