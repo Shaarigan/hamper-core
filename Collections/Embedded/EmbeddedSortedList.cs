@@ -80,6 +80,8 @@ namespace Soe.Collections.Embedded
             this.comparer = comparer;
             this.freeList = EmbeddedSortedList<T>.InvalidIndex;
             this.head = EmbeddedSortedList<T>.InvalidIndex;
+            this.buffer = default;
+            this.count = 0;
         }
         /// <summary>
         /// Initializes this container instance by a given default capacity

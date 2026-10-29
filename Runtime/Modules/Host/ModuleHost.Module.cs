@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Soe.Collections.HashSet;
 
 namespace Soe.Runtime
 {
@@ -16,7 +17,7 @@ namespace Soe.Runtime
     static partial class ModuleHost
     {
         [StructLayout(LayoutKind.Explicit)]
-        internal readonly struct ModuleId
+        internal readonly struct ModuleId : IEquatable<ModuleId>
         {
             [FieldOffset(0)]
             public readonly UInt64 Value;
@@ -32,9 +33,29 @@ namespace Soe.Runtime
                 this.HashCode = hashCode;
                 this.UniqueId = uniqueId;
             }
+
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Equals(ModuleId other)
+            {
+                return (Value == other.Value);
+            }
+
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override bool Equals(object? obj)
+            {
+                return obj is ModuleId other && Equals(other);
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override int GetHashCode()
+            {
+                return (int)HashCode;
+            }
         }
         
-        public readonly struct RuntimeModule
+        public readonly struct RuntimeModule : IHashContainer<ModuleId>
         {
             internal readonly ModuleId Id;
             public readonly Assembly Assembly;
@@ -48,7 +69,7 @@ namespace Soe.Runtime
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get { return Context.ModuleName; }
             }
-            
+
             /// <summary>
             /// Gets if this element has a memory handle assigned to
             /// </summary>
@@ -74,6 +95,21 @@ namespace Soe.Runtime
                 this.Assembly = assembly;
                 this.Context = new ModuleContext(module);
             }
+
+            #region IHashContainer Members
+            /// <inheritdoc/>
+            int IHashContainer<ModuleId>.Hash
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get { return (int)Id.HashCode; }
+            }
+            /// <inheritdoc/>
+            ModuleId IHashContainer<ModuleId>.Key
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get { return Id; }
+            }
+            #endregion
         }
         
         public readonly struct ModuleContext
