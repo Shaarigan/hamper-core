@@ -451,7 +451,7 @@ namespace Soe.Collections.HashSet
     #else
     internal
     #endif
-    partial struct HashSet<T, ArrayBuffer, Container>(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor) : IIterable<Container, HashSet<T, ArrayBuffer, Container>.IteratorStrategy>, ISequence<Container>, IDisposable
+    partial struct HashSet<T, ArrayBuffer, Container>(IEqualityComparer<T> comparer, float loadFactor = HashSet.DefaultLoadFactor) : IIterable<Container, HashSet.IteratorStrategy<T, Container>>, ISequence<Container>, IDisposable
         where ArrayBuffer : struct, IArrayAccessor<Container>
         where Container : struct, IHashContainer<T>
     {
@@ -751,9 +751,9 @@ namespace Soe.Collections.HashSet
 
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Iterator<Container, IteratorStrategy> GetEnumerator()
+        public Iterator<Container, HashSet.IteratorStrategy<T, Container>> GetEnumerator()
         {
-            return new Iterator<Container, IteratorStrategy>(items.AsSpan());
+            return new Iterator<Container, HashSet.IteratorStrategy<T, Container>>(items.AsSpan());
         }
     }
 }

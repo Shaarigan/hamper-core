@@ -23,5 +23,25 @@ namespace System.Threading.Tasks
                 default: return false;
             }
         }
+        
+        /// <summary>
+        /// Joins the task until execution ends
+        /// </summary>
+        /// <returns>True if the task was completed successfully, false otherwise</returns>
+        public static bool Join(this Task<bool> task)
+        {
+            bool result = false;
+            try
+            {
+                 result = task.GetAwaiter().GetResult();
+            }
+            catch (TaskCanceledException)
+            { }
+            switch (task.Status)
+            {
+                case TaskStatus.RanToCompletion: return result;
+                default: return false;
+            }
+        }
     }
 }
