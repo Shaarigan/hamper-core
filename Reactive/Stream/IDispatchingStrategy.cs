@@ -19,19 +19,19 @@ namespace Soe.Reactive
         /// </summary>
         /// <param name="observers">The instance list of observers to provide notification data to</param>
         /// <param name="value">Provides the observer with new data</param>
-        void OnNext(Span<IObserver<T>?> observers, in T value);
-        
+        void OnNext(ReadOnlySpan<IObserver<T>?> observers, in T value);
+
         /// <summary>
         /// Notifies the underlying observers that the provider has experienced an error condition
         /// </summary>
         /// <param name="observers">The instance list of observers to provide error data to</param>
         /// <param name="error">An object that provides additional information about the error</param>
-        void OnError(Span<IObserver<T>?> observers, in Exception error);
-        
+        void OnError(ReadOnlySpan<IObserver<T>?> observers, in Exception error);
+
         /// <summary>
         /// Notifies the underlying observers that the provider has finished sending push-based notifications
         /// </summary>
         /// <param name="observers">The instance list of observers to notify</param>
-        void OnCompleted(Span<IObserver<T>?> observers);
+        void OnCompleted(ReadOnlySpan<IObserver<T>?> observers);
     }
 }
