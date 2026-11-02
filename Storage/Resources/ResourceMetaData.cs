@@ -32,6 +32,17 @@ namespace Soe.Storage
         }
         
         [FieldOffset(1)]
+        private readonly byte authority;
+        /// <summary>
+        /// Gets the index of first character in the authority portion of the corresponding resource identifier
+        /// </summary>
+        public int Authority
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return authority; }
+        }
+        
+        [FieldOffset(2)]
         private readonly byte path;
         /// <summary>
         /// Gets the index of first character in the path of the corresponding resource identifier
@@ -42,7 +53,7 @@ namespace Soe.Storage
             get { return path; }
         }
         
-        [FieldOffset(2)]
+        [FieldOffset(3)]
         private readonly UInt16 name;
         /// <summary>
         /// Gets the index of first character in the name of the corresponding resource identifier
@@ -53,8 +64,8 @@ namespace Soe.Storage
             get { return name; }
         }
         
-        [FieldOffset(4)]
-        private readonly UInt16 extension;
+        [FieldOffset(5)]
+        private readonly byte extension;
         /// <summary>
         /// Gets the index of first character in the file extension of the corresponding resource identifier
         /// </summary>
@@ -79,18 +90,20 @@ namespace Soe.Storage
         /// Initializes a new metadata instance from the provided values
         /// </summary>
         /// <param name="flags">The flags of the corresponding resource identifier</param>
+        /// <param name="authority">The index of first character in the authority portion of the corresponding resource identifier</param>
         /// <param name="path">The index of first character in the path of the corresponding resource identifier</param>
         /// <param name="name">The index of first character in the name of the corresponding resource identifier</param>
-        /// <param name="extension">The index of first character in the file extension of the corresponding resource identifier</param>
+        /// <param name="extension">The index of first character in the file extension portion of the corresponding resource identifier</param>
         /// <param name="arguments">The index of first character in the argument portion of the corresponding resource identifier</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ResourceMetaData(IdentifierFlags flags, int path, int name, int extension, int arguments)
+        public ResourceMetaData(IdentifierFlags flags, int authority, int path, int name, int extension, int arguments)
         {
             this.value = 0;
             this.flags = flags;
+            this.authority = (byte)authority;
             this.path = (byte)path;
             this.name = (UInt16)name;
-            this.extension = (UInt16)extension;
+            this.extension = (byte)extension;
             this.arguments = (UInt16)arguments;
         }
         /// <summary>

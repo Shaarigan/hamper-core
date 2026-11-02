@@ -37,7 +37,7 @@ namespace Soe.Storage
         public bool IsRelative
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return meta.Flags.HasFlag(IdentifierFlags.IsRelative); }
+            get { return meta.Flags.FlagSet(IdentifierFlags.IsRelative); }
         }
 
         /// <summary>
@@ -46,10 +46,11 @@ namespace Soe.Storage
         public bool IsRoot
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return ((meta.Name - meta.Path) == 1 && 
-                          (meta.Arguments - meta.Name) == 0 && 
-                          identifier[meta.Path] == PathSeparator
-            ); }
+            get
+            {
+                ReadOnlySpan<char> path = Path;
+                return (path.Length > 0 && path[0] == Character.PathSeparator);
+            }
         }
 
         /// <summary>
@@ -70,6 +71,16 @@ namespace Soe.Storage
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return meta.Flags.FlagSet(IdentifierFlags.IsUnc); }
         }
+        
+        /// <summary>
+        /// Gets if this unified resource identifier has an authority component set. This is true
+        /// for network paths or remote locations
+        /// </summary>
+        public bool IsUri
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return meta.Flags.FlagSet(IdentifierFlags.IsUri); }
+        }
 
         /// <summary>
         /// Gets the name of an authority handling the location this unified resource identifier points to
@@ -77,9 +88,9 @@ namespace Soe.Storage
         public ReadOnlySpan<char> Authority
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return identifier.AsSpan(IsUnc ? 2 : 0, meta.Path); }
+            get { return identifier.AsSpan(meta.Authority, meta.Path - meta.Authority); }
         }
-
+        
         /// <summary>
         /// Gets the full qualified path or location this unified resource identifier points to
         /// </summary>
@@ -95,7 +106,33 @@ namespace Soe.Storage
         public ReadOnlySpan<char> Name
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return identifier.AsSpan(meta.Name, meta.Arguments - meta.Name); }
+            get
+            {
+                int length = (meta.Arguments - meta.Name);
+                return identifier.AsSpan(length > 0 ? meta.Name + 1 : meta.Name, Math.Max(length - 1, 0));
+            }
+        }
+        
+        /// <summary>
+        /// Gets the file extension of the resource handled by this unified resource identifier
+        /// </summary>
+        public ReadOnlySpan<char> Extension
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                ReadOnlySpan<char> name = Name;
+                return (meta.Extension < name.Length ? Name.Slice(meta.Extension) : ReadOnlySpan<char>.Empty);
+            }
+        }
+        
+        /// <summary>
+        /// Gets the additional arguments of this unified resource identifier
+        /// </summary>
+        public ReadOnlySpan<char> Arguments
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return identifier.AsSpan(meta.Arguments < identifier.Length ? meta.Arguments + 1 : meta.Arguments); }
         }
 
         /// <summary>
@@ -128,30 +165,6 @@ namespace Soe.Storage
         {
             return identifier.meta;
         }
-
-        /*[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ResourceIdentifier operator /(ResourceIdentifier left, ResourceIdentifier right)
-        {
-            return Combine(left, right);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ResourceIdentifier operator /(string left, ResourceIdentifier right)
-        {
-            if (string.IsNullOrWhiteSpace(left))
-            {
-                throw new ArgumentOutOfRangeException("left");
-            }
-            return Combine(new ResourceIdentifier(left), right);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ResourceIdentifier operator /(ResourceIdentifier left, string right)
-        {
-            if (string.IsNullOrWhiteSpace(right))
-            {
-                throw new ArgumentOutOfRangeException("right");
-            }
-            return Combine(left, new ResourceIdentifier(right));
-        }*/
         
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
