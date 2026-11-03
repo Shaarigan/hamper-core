@@ -23,6 +23,7 @@ namespace Soe.Storage
         public static ResourceMetaData Parse(Span<char> source, bool normalize)
         {
             ResourceMetaData result = default;
+            bool hasExtension = false;
             for (int i = 0, state = 0; i < source.Length; i++)
             {
                 if (normalize && source[i] != Character.PathSeparatorAlternative)
@@ -30,7 +31,7 @@ namespace Soe.Storage
                     // Normalize Windows \ to UNIX /
                     source[i] = Character.PathSeparator;
                 }
-                Parse(ref result, ref state, ref i, source);
+                Parse(ref result, ref hasExtension, ref state, ref i, source);
             }
             
             Fixup(ref result, source.Length);
@@ -45,9 +46,10 @@ namespace Soe.Storage
         public static ResourceMetaData Parse(ReadOnlySpan<char> source)
         {
             ResourceMetaData result = default;
+            bool hasExtension = false;
             for (int i = 0, state = 0; i < source.Length; i++)
             {
-                Parse(ref result, ref state, ref i, source);
+                Parse(ref result, ref hasExtension, ref state, ref i, source);
             }
             
             Fixup(ref result, source.Length);
@@ -63,7 +65,7 @@ namespace Soe.Storage
         {
             return Parse(source.AsSpan());
         }
-        static void Parse(ref ResourceMetaData result, ref int state, ref int index, ReadOnlySpan<char> source)
+        static void Parse(ref ResourceMetaData result, ref bool hasExtension, ref int state, ref int index, ReadOnlySpan<char> source)
         {
             switch (state)
             {
@@ -79,7 +81,7 @@ namespace Soe.Storage
                                 {
                                     if(index <= byte.MaxValue)
                                     {
-                                        result = new ResourceMetaData(result.Flags | IdentifierFlags.IsUnc, index + 1, index, index, index, index);
+                                        result = new ResourceMetaData(result.Flags | IdentifierFlags.IsUnc, index + 1, index + 1, index + 1, index + 1, index + 1);
                                         state = 1;
                                     }
                                     else ThrowPathTooLong(byte.MaxValue);
@@ -89,7 +91,7 @@ namespace Soe.Storage
                                 #region URI
                                 else if(index + 1 <= byte.MaxValue)
                                 {
-                                    result = new ResourceMetaData(result.Flags | IdentifierFlags.IsUri, index + 1, index, index, index, index);
+                                    result = new ResourceMetaData(result.Flags | IdentifierFlags.IsUri, index + 1, index + 1, index + 1, index + 1, index + 1);
                                     state = 1;
                                 }
                                 else ThrowPathTooLong(byte.MaxValue);
@@ -100,21 +102,18 @@ namespace Soe.Storage
                         #region Local path
                             else
                             {
-                                result = new ResourceMetaData(index > 0 ? (result.Flags | IdentifierFlags.IsRelative) : result.Flags, 0, 0, index, index, index);
+                                result = new ResourceMetaData(index > 0 ? (result.Flags | IdentifierFlags.IsRelative) : result.Flags, 0, 0, index + 1, index + 1, index + 1);
                                 state = 2;
                             }
                             break;
                         #endregion
                             
                         #region Relative path
-                        case Character.PathShiftDelimiter: if(index > 0)
+                        case Character.PathShiftDelimiter:
                             {
-                                result = new ResourceMetaData(result.Flags | IdentifierFlags.IsRelative, 0, 0, 0, 0, 0);
                                 index--;
-                                    
                                 state = 2;
                             }
-                            else throw new FormatException(string.Concat("Unexpected '.' character at ", index));
                             break;
                         #endregion
                             
@@ -153,7 +152,7 @@ namespace Soe.Storage
                         case Character.PathSeparator:
                         case Character.PathSeparatorAlternative: if (index <= byte.MaxValue)
                             {
-                                result = new ResourceMetaData(result.Flags, result.Authority, index, index, index, index);
+                                result = new ResourceMetaData(result.Flags, result.Authority, index, index + 1, index + 1, index + 1);
                                 state = 2;
                             }
                             else ThrowPathTooLong(byte.MaxValue);
@@ -176,11 +175,14 @@ namespace Soe.Storage
                 #region Path
                 case 2: switch (source[index])
                     {
-                        #region Name
-                        case Character.PathSeparator:
-                        case Character.PathSeparatorAlternative: if(index <= UInt16.MaxValue)
+                        #region Path segment
+                        case Character.PathSeparator: 
+                        case Character.PathSeparatorAlternative: if(index + 1 <= UInt16.MaxValue)
                             {
-                                result = new ResourceMetaData(result.Flags, result.Authority, result.Path, index, index, index);
+                                if(index > 0 && index + 1 <  source.Length)
+                                {
+                                    result = new ResourceMetaData(result.Flags, result.Authority, result.Path, index + 1, index + 1, index + 1);
+                                }
                             }
                             else ThrowPathTooLong(UInt16.MaxValue);
                             break;
@@ -197,7 +199,7 @@ namespace Soe.Storage
                                             index += 2;
                                             if(index <= UInt16.MaxValue)
                                             {
-                                                result = new ResourceMetaData(result.Flags | IdentifierFlags.IsRelative, result.Authority, result.Path, index, index, index);
+                                                result = new ResourceMetaData(result.Flags | IdentifierFlags.IsRelative, result.Authority, result.Path, index + 1, index + 1, index + 1);
                                             }
                                             else ThrowPathTooLong(UInt16.MaxValue);
                                             #endregion
@@ -207,7 +209,8 @@ namespace Soe.Storage
                                             #region .
                                             if(++index - result.Name <= byte.MaxValue)
                                             {
-                                                result = new ResourceMetaData(result.Flags, result.Authority, result.Path, result.Name, index - result.Name, index);
+                                                result = new ResourceMetaData(result.Flags, result.Authority, result.Path, result.Name, index - result.Name, index + 1);
+                                                hasExtension = true;
                                             }
                                             else ThrowPathTooLong(byte.MaxValue);
                                             #endregion
@@ -218,7 +221,7 @@ namespace Soe.Storage
                                     case Character.PathSeparator:
                                     case Character.PathSeparatorAlternative: if (++index <= UInt16.MaxValue)
                                         {
-                                            result = new ResourceMetaData(result.Flags | IdentifierFlags.IsRelative, result.Authority, result.Path, index, index, index);
+                                            result = new ResourceMetaData(result.Flags | IdentifierFlags.IsRelative, result.Authority, result.Path, index + 1, index + 1, index + 1);
                                         }
                                         else ThrowPathTooLong(UInt16.MaxValue);
                                         break;
@@ -227,7 +230,8 @@ namespace Soe.Storage
                                     #region Anything else
                                     default: if(index - result.Name <= byte.MaxValue)
                                         {
-                                            result = new ResourceMetaData(result.Flags, result.Authority, result.Path, result.Name, index - result.Name, index);
+                                            result = new ResourceMetaData(result.Flags, result.Authority, result.Path, result.Name, index - result.Name, index + 1);
+                                            hasExtension = true;
                                         }
                                         else ThrowPathTooLong(byte.MaxValue);
                                         break;
@@ -239,7 +243,8 @@ namespace Soe.Storage
                         #region Extension
                             else if(index - result.Name <= byte.MaxValue)
                             {
-                                result = new ResourceMetaData(result.Flags, result.Authority, result.Path, result.Name, index - result.Name, index);
+                                result = new ResourceMetaData(result.Flags, result.Authority, result.Path, result.Name, index - result.Name, index + 1);
+                                hasExtension = true;
                             }
                             else ThrowPathTooLong(byte.MaxValue);
                             break;
@@ -253,6 +258,15 @@ namespace Soe.Storage
                         }
                             break;
                         #endregion
+                        
+                        #region Anything else
+                        default: if(index - result.Name <= byte.MaxValue)
+                            {
+                                result = new ResourceMetaData(result.Flags, result.Authority, result.Path, result.Name, hasExtension ? result.Extension : index + 1, index + 1);
+                            }
+                            else ThrowPathTooLong(byte.MaxValue);
+                            break;
+                        #endregion
                     }
                     break;
                 #endregion
@@ -261,19 +275,19 @@ namespace Soe.Storage
 
         static void Fixup(ref ResourceMetaData result, int length)
         {
-            if (result.Path <= result.Authority)
+            if (result.Path < result.Authority)
             {
                 result = new ResourceMetaData(result.Flags, result.Authority, length, result.Name, result.Extension, result.Arguments);
             }
-            if (result.Name <= result.Path)
+            if (result.Name < result.Path)
             {
                 result = new ResourceMetaData(result.Flags, result.Authority, result.Path, result.Path, result.Extension, result.Arguments);
             }
-            if (result.Arguments <= result.Name)
+            if (result.Arguments < result.Name)
             {
                 result = new ResourceMetaData(result.Flags, result.Authority, result.Path, result.Name, result.Extension, length);
             }
-            if (result.Extension >= result.Arguments - result.Name)
+            if (result.Extension > result.Arguments - result.Name)
             {
                 result = new ResourceMetaData(result.Flags, result.Authority, result.Path, result.Name, result.Arguments - result.Name, result.Arguments);
             }

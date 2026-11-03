@@ -21,143 +21,59 @@ namespace Soe.Storage
     {
         private readonly string identifier = identifier;
         private readonly ResourceMetaData meta = meta;
+
+        /// <summary>
+        /// Gets if this unified resource identifier points to a certain location
+        /// </summary>
+        public bool IsLocation
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (meta.Path > 0); }
+        }
+
+        /// <summary>
+        /// Gets the location component of this unified resource identifier
+        /// </summary>
+        public LocationComponent Location
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return new LocationComponent(identifier, meta); }
+        }
         
         /// <summary>
-        /// Gets if this unified resource identifier is absolute
+        /// Gets if this unified resource identifier points to a full qualified target
         /// </summary>
-        public bool IsAbsolute
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return !IsRelative; }
-        }
-
-        /// <summary>
-        /// Gets if this unified resource identifier is relative to a certain root
-        /// </summary>
-        public bool IsRelative
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return meta.Flags.FlagSet(IdentifierFlags.IsRelative); }
-        }
-
-        /// <summary>
-        /// Gets if this unified resource identifier points to the root node
-        /// </summary>
-        public bool IsRoot
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                ReadOnlySpan<char> path = Path;
-                return (path.Length > 0 && path[0] == Character.PathSeparator);
-            }
-        }
-
-        /// <summary>
-        /// Gets if this unified resource identifier points to a full qualified path or location
-        /// </summary>
-        public bool IsPath
+        public bool IsTarget
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return ((meta.Name - meta.Path) > 0); }
         }
-
+        
         /// <summary>
-        /// Gets if this unified resource identifier has an authority component set. This is true
-        /// for network paths or remote locations
+        /// Gets the target component of this unified resource identifier
         /// </summary>
-        public bool IsUnc
+        public TargetComponent Target
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return meta.Flags.FlagSet(IdentifierFlags.IsUnc); }
+            get { return new TargetComponent(identifier, meta); }
         }
         
         /// <summary>
-        /// Gets if this unified resource identifier has an authority component set. This is true
-        /// for network paths or remote locations
+        /// Gets if this unified resource identifier contains a query string
         /// </summary>
-        public bool IsUri
+        public bool IsQuery
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return meta.Flags.FlagSet(IdentifierFlags.IsUri); }
-        }
-
-        /// <summary>
-        /// Gets the name of an authority handling the location this unified resource identifier points to
-        /// </summary>
-        public ReadOnlySpan<char> Authority
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return identifier.AsSpan(meta.Authority, meta.Path - meta.Authority); }
+            get { return (meta.Arguments + 1 < identifier.Length); }
         }
         
         /// <summary>
-        /// Gets the full qualified path or location this unified resource identifier points to
+        /// Gets the query component of this unified resource identifier
         /// </summary>
-        public ReadOnlySpan<char> Path
+        public QueryComponent Query
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return identifier.AsSpan(meta.Path, meta.Name - meta.Path); }
-        }
-
-        /// <summary>
-        /// Gets the name of the resource handled by this unified resource identifier
-        /// </summary>
-        public ReadOnlySpan<char> Name
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                int length = (meta.Arguments - meta.Name);
-                return identifier.AsSpan(length > 0 ? meta.Name + 1 : meta.Name, Math.Max(length - 1, 0));
-            }
-        }
-        
-        /// <summary>
-        /// Gets the file extension of the resource handled by this unified resource identifier
-        /// </summary>
-        public ReadOnlySpan<char> Extension
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                ReadOnlySpan<char> name = Name;
-                return (meta.Extension < name.Length ? Name.Slice(meta.Extension) : ReadOnlySpan<char>.Empty);
-            }
-        }
-        
-        /// <summary>
-        /// Gets the additional arguments of this unified resource identifier
-        /// </summary>
-        public ReadOnlySpan<char> Arguments
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return identifier.AsSpan(meta.Arguments < identifier.Length ? meta.Arguments + 1 : meta.Arguments); }
-        }
-
-        /// <summary>
-        /// Gets the length of this unified resource identifier
-        /// </summary>
-        public int Length
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return (meta.Arguments - meta.Path); }
-        }
-
-        /// <summary>
-        /// Gets the character contained at certain index
-        /// </summary>
-        public char this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get 
-            {
-                if (index >= 0 && index <= (meta.Arguments - meta.Path))
-                {
-                    return identifier[meta.Path + index];
-                }
-                else throw new IndexOutOfRangeException();
-            }
+            get { return new QueryComponent(identifier, meta); }
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -184,12 +100,6 @@ namespace Soe.Storage
         public override int GetHashCode()
         {
             return identifier.GetHashCode();
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override string ToString()
-        {
-            return identifier.Substring(meta.Path, meta.Arguments - meta.Path);
         }
     }
 }
