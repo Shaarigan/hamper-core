@@ -3,12 +3,13 @@
 
 using System.IO;
 using System.Runtime.CompilerServices;
-using Soe.Collections.Embedded;
 using Soe.Collections.HashSet;
 
 namespace Soe.Storage
 {
-
+    /// <summary>
+    /// Stores volume information from the underlying operating system
+    /// </summary>
     #if EXPORT_HAMPER_CORE_STORAGE
     public
     #else
@@ -17,12 +18,26 @@ namespace Soe.Storage
     static partial class VolumeManager
     {
         private static HashSet<string, HeapArray<VolumeInfo>, VolumeInfo> volumes;
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static VolumeManager()
         {
             volumes = new HashSet<string, HeapArray<VolumeInfo>, VolumeInfo>(StringComparer.InvariantCultureIgnoreCase);
         }
+
+        /// <summary>
+        /// Gets the collection of stored volumes
+        /// </summary>
+        /// <returns>An in-memory representation of the sequence</returns>
+        public static ReadOnlySpan<VolumeInfo> AsReadOnlySpan()
+        {
+            return volumes.AsSpan();
+        }
         
+        /// <summary>
+        /// Updates stored volume information from the current state of the underlying operating system
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Initialize()
         {
             volumes.Clear();
@@ -49,7 +64,7 @@ namespace Soe.Storage
                     if (fs >= 0 && (fs - mount) - 1 > 0 && !line.AsSpan().StartsWith(line.AsSpan(fs, Math.Max(FindWhitespace(line, fs) - fs, 0))))
                     {
                         ReadOnlySpan<char> mountPoint = line.AsSpan(mount, (fs - mount) - 1);
-
+                        
                         if ((mountPoint.Length == 1 || !line.AsSpan().StartsWith(mountPoint)) && Path.IsPathFullyQualified(mountPoint))
                         {
                             ReadOnlySpan<char> name = (mountPoint.Length == 1 ? "root" : mountPoint.Slice(mountPoint.LastIndexOf(Path.DirectorySeparatorChar) + 1));
@@ -57,10 +72,29 @@ namespace Soe.Storage
 
                             if (!volumeName.IsEmpty)
                             {
+                                if(mountPoint.Length > 1)
+                                {
+                                    foreach (VolumeInfo volume in volumes)
+                                    {
+                                        ReadOnlySpan<char> path = volume.Location.Target.FullName;
+                                        if (path.Length > 1 && mountPoint.StartsWith(path))
+                                        {
+                                            // Skip mounts that are part of another mount
+                                            goto End;
+                                        }
+                                        else if (path.Length > 1 && path.StartsWith(mountPoint))
+                                        {
+                                            // Remove mounts that are part of another mount
+                                            volumes.Remove(volume.Key, volume.Hash);
+                                            break;
+                                        }
+                                    }
+                                }
                                 Register(name.ToString(), new ResourceIdentifier(mountPoint.ToString(), ResourceIdentifier.Parse(mountPoint)), volumeName.ToString());
                             }
                         }
                     }
+                End:;
                 }
             }
         }
@@ -120,17 +154,38 @@ namespace Soe.Storage
             else throw new ArgumentOutOfRangeException(nameof(identifier));
         }
         /// <summary>
-        /// 
+        /// Adds a new volume information to the manager
         /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="location"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentException"></exception>
+        /// <param name="identifier">An identifier the volume is associated with</param>
+        /// <param name="location">A unified resource identifier associated with the volume</param>
+        /// <returns>The resulting <paramref name="identifier"/> the volume is associated with</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="identifier"/> is null or empty</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Register(string identifier, ResourceIdentifier location)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
             return Register(identifier, location, null);
+        }
+
+        /// <summary>
+        /// Attempts to get the volume associated with <paramref name="identifier"/>
+        /// </summary>
+        /// <param name="identifier">An identifier the volume is associated with</param>
+        /// <param name="location">The unified resource identifier associated with the volume</param>
+        /// <returns>True if a volume is associated with <paramref name="identifier"/>, false otherwise</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryGetVolume(string identifier, out ResourceIdentifier location)
+        {
+            if (volumes.Find(identifier, identifier.GetHashCode(), out _, out _, out Ref<VolumeInfo> volume))
+            {
+                location = volume.Value.Location;
+                return true;
+            }
+            else
+            {
+                location = default;
+                return false;
+            }
         }
         
         static bool ValidateString(string str)
@@ -143,6 +198,16 @@ namespace Soe.Storage
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// Returns an iterator that iterates through the collection of volumes
+        /// </summary>
+        /// <returns>The iterator handling the underlying collection</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlyIterator<VolumeInfo, HashSet.ReadOnlyIteratorStrategy<string, VolumeInfo>> GetEnumerator()
+        {
+            return new ReadOnlyIterator<VolumeInfo, HashSet.ReadOnlyIteratorStrategy<string, VolumeInfo>>(volumes.AsSpan());
         }
     }
 }

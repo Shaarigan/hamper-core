@@ -13,6 +13,11 @@ namespace Soe.Storage
     #endif
     static partial class VolumeManager
     {
+        /// <summary>
+        /// Provides access to information on a logical volume
+        /// </summary>
+        /// <param name="identifier">An identifier the volume is associated with</param>
+        /// <param name="location">A unified resource identifier associated with the volume</param>
         public readonly struct VolumeInfo(string identifier, ResourceIdentifier location) : IHashContainer<string>
         {
             /// <inheritdoc/>

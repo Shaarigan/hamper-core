@@ -145,6 +145,23 @@ namespace Soe.Storage
             }
         
             /// <summary>
+            /// Gets the full qualified location the target points to
+            /// </summary>
+            public ReadOnlySpan<char> FullName
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    ReadOnlySpan<char> path = identifier.Slice(meta.Path, meta.Arguments - meta.Path);
+                    if (CanTrim(path))
+                    {
+                        return path.Slice(0, path.Length - 1);
+                    }
+                    else return path;
+                }
+            }
+            
+            /// <summary>
             /// Gets the extension of the resource identifier
             /// </summary>
             public ReadOnlySpan<char> Extension

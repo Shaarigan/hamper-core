@@ -24,6 +24,16 @@ namespace Soe.Storage
         {
             return ((value & flags) == flags);
         }
+        /// <summary>
+        /// Tests if the provided flag bits are set in this enum
+        /// </summary>
+        /// <param name="flags">The flag bits to test</param>
+        /// <returns>True if the flag bits are present in this value, false otherwise</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool FlagSet(this NormalizationFlags value, NormalizationFlags flags)
+        {
+            return ((value & flags) == flags);
+        }
         
         // ReSharper restore InvalidXmlDocComment
     }
