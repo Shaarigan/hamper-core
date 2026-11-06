@@ -38,13 +38,33 @@ namespace Soe.Runtime
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set { Volatile.Write(ref log, value); }
         }
+        
+        /// <summary>
+        /// Gets the target of this application
+        /// </summary>
+        public static string BaseDirectory
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return AppContext.BaseDirectory; }
+        }
 
+        /// <summary>
+        /// Gets or sets the target of the current active directory
+        /// </summary>
+        public static string LocalDirectory
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return Environment.CurrentDirectory; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set { Environment.CurrentDirectory = value; }
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Application()
         {
             log = new ConsoleLogService();
         }
-
+        
         /// <summary>
         /// Writes the specified string value to the declared output stream
         /// </summary>

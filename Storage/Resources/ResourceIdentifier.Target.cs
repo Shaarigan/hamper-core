@@ -17,6 +17,15 @@ namespace Soe.Storage
         public readonly ref partial struct TargetComponent
         {
             /// <summary>
+            /// Gets the parent of this target
+            /// </summary>
+            public ReadOnlySpan<char> Parent
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get { return GetParent(FullName); }
+            }
+            
+            /// <summary>
             /// Returns a string that represents the current <see cref="TargetComponent.FullName"/> property
             /// </summary>
             /// <param name="flags">Normalization settings for the resulting string</param>
@@ -27,7 +36,25 @@ namespace Soe.Storage
                 return Normalize(FullName, flags);
             }
         }
-
+        
+        /// <summary>
+        /// Returns a string that is the logical parent of <paramref name="source"/>
+        /// </summary>
+        /// <param name="source">The source to get the parent for</param>
+        /// <returns>The target that is the logical parent of <paramref name="source"/>, or <see cref="ReadOnlySpan{T}.Empty"/></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<char> GetParent(ReadOnlySpan<char> source)
+        {
+            for (int i = source.Length - 1; i >= 0; i--)
+            {
+                if (source[i] == Character.PathSeparator || source[i]  == Character.PathSeparatorAlternative)
+                {
+                    return source.Slice(0, i);
+                }
+            }
+            return ReadOnlySpan<char>.Empty;
+        }
+        
         /// <summary>
         /// Normalizes the provided source by removing any occurrences of specific separator chars and relative segments
         /// </summary>
@@ -122,7 +149,7 @@ namespace Soe.Storage
                 StringBuilderPool.Shared.Return(sb);
             }
         }
-
+        
         static int Expand(ReadOnlySpan<char> input, StringBuilder sb)
         {
             if (input[0] == '~' && (input.Length == 1 || input[1] == Character.PathSeparator || input[1] == Character.PathSeparatorAlternative))
