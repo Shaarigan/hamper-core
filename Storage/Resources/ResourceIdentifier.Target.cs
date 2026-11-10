@@ -36,6 +36,212 @@ namespace Soe.Storage
                 return Normalize(FullName, flags);
             }
         }
+
+        /// <summary>
+        /// Combines two target components into a single target
+        /// </summary>
+        /// <param name="target1">The first component to combine</param>
+        /// <param name="target2">The second component to combine</param>
+        /// <returns>An n-value tuple representing the combined target</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpanTuple<char, char> Combine(TargetComponent target1, TargetComponent target2)
+        {
+            if (target2.IsRooted)
+            {
+                return ReadOnlySpanTuple.Create(target1.FullName, target2.FullName.Slice(1));
+            }
+            else return ReadOnlySpanTuple.Create(target1.FullName, target2.FullName);
+        }
+        /// <summary>
+        /// Combines two target components into a single target
+        /// </summary>
+        /// <param name="target1">The first component to combine</param>
+        /// <param name="target2">The second component to combine</param>
+        /// <returns>An n-value tuple representing the combined target</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpanTuple<char, char> Combine(ReadOnlySpan<char> target1, TargetComponent target2)
+        {
+            if (target2.IsRooted)
+            {
+                return ReadOnlySpanTuple.Create(target1, target2.FullName.Slice(1));
+            }
+            else return ReadOnlySpanTuple.Create(target1, target2.FullName);
+        }
+        /// <summary>
+        /// Appends a target component to the provided n-value tuple
+        /// </summary>
+        /// <param name="tuple">The tuple to append the target component to</param>
+        /// <param name="target">The target component to append</param>
+        /// <returns>An n-value tuple representing the combined target</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpanTuple<char, char, char> Combine(ReadOnlySpanTuple<char, char> tuple, TargetComponent target)
+        {
+            if (target.IsRooted)
+            {
+                return ReadOnlySpanTuple.Create(tuple.Item1, tuple.Item2, target.FullName.Slice(1));
+            }
+            else return ReadOnlySpanTuple.Create(tuple.Item1, tuple.Item2, target.FullName);
+        }
+        /// <summary>
+        /// Appends a target component to the provided n-value tuple
+        /// </summary>
+        /// <param name="tuple">The tuple to append the target component to</param>
+        /// <param name="target">The target component to append</param>
+        /// <returns>An n-value tuple representing the combined target</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpanTuple<char, char, char, char> Combine(ReadOnlySpanTuple<char, char, char> tuple, TargetComponent target)
+        {
+            if (target.IsRooted)
+            {
+                return ReadOnlySpanTuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, target.FullName.Slice(1));
+            }
+            else return ReadOnlySpanTuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, target.FullName);
+        }
+        /// <summary>
+        /// Appends a target component to the provided n-value tuple
+        /// </summary>
+        /// <param name="tuple">The tuple to append the target component to</param>
+        /// <param name="target">The target component to append</param>
+        /// <returns>An n-value tuple representing the combined target</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpanTuple<char, char, char, char, char> Combine(ReadOnlySpanTuple<char, char, char, char> tuple, TargetComponent target)
+        {
+            if (target.IsRooted)
+            {
+                return ReadOnlySpanTuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, target.FullName.Slice(1));
+            }
+            else return ReadOnlySpanTuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, target.FullName);
+        }
+        /// <summary>
+        /// Appends a target component to the provided n-value tuple
+        /// </summary>
+        /// <param name="tuple">The tuple to append the target component to</param>
+        /// <param name="target">The target component to append</param>
+        /// <returns>An n-value tuple representing the combined target</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpanTuple<char, char, char, char, char, char> Combine(ReadOnlySpanTuple<char, char, char, char, char> tuple, TargetComponent target)
+        {
+            if (target.IsRooted)
+            {
+                return ReadOnlySpanTuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, target.FullName.Slice(1));
+            }
+            else return ReadOnlySpanTuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, target.FullName);
+        }
+        /// <summary>
+        /// Appends a target component to the provided n-value tuple
+        /// </summary>
+        /// <param name="tuple">The tuple to append the target component to</param>
+        /// <param name="target">The target component to append</param>
+        /// <returns>An n-value tuple representing the combined target</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpanTuple<char, char, char, char, char, char, char> Combine(ReadOnlySpanTuple<char, char, char, char, char, char> tuple, TargetComponent target)
+        {
+            if (target.IsRooted)
+            {
+                return ReadOnlySpanTuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, target.FullName.Slice(1));
+            }
+            else return ReadOnlySpanTuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, target.FullName);
+        }
+        /// <summary>
+        /// Combines three target components into a single target
+        /// </summary>
+        /// <param name="target1">The first component to combine</param>
+        /// <param name="target2">The second component to combine</param>
+        /// <param name="target3">The third component to combine</param>
+        /// <returns>An n-value tuple representing the combined target</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpanTuple<char, char, char> Combine(TargetComponent target1, TargetComponent target2, TargetComponent target3)
+        {
+            ReadOnlySpan<char> segment2 = target2.FullName;
+            if (target2.IsRooted)
+            {
+                segment2 = segment2.Slice(1);
+            }
+            ReadOnlySpan<char> segment3 = target3.FullName;
+            if (target3.IsRooted)
+            {
+                segment3 = segment3.Slice(1);
+            }
+            return ReadOnlySpanTuple.Create(target1.FullName, segment2, segment3);
+        }
+        /// <summary>
+        /// Combines three target components into a single target
+        /// </summary>
+        /// <param name="target1">The first component to combine</param>
+        /// <param name="target2">The second component to combine</param>
+        /// <param name="target3">The third component to combine</param>
+        /// <returns>An n-value tuple representing the combined target</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpanTuple<char, char, char> Combine(ReadOnlySpan<char> target1, TargetComponent target2, TargetComponent target3)
+        {
+            ReadOnlySpan<char> segment2 = target2.FullName;
+            if (target2.IsRooted)
+            {
+                segment2 = segment2.Slice(1);
+            }
+            ReadOnlySpan<char> segment3 = target3.FullName;
+            if (target3.IsRooted)
+            {
+                segment3 = segment3.Slice(1);
+            }
+            return ReadOnlySpanTuple.Create(target1, segment2, segment3);
+        }
+        /// <summary>
+        /// Combines four target components into a single target
+        /// </summary>
+        /// <param name="target1">The first component to combine</param>
+        /// <param name="target2">The second component to combine</param>
+        /// <param name="target3">The third component to combine</param>
+        /// <param name="target4">The fourth component to combine</param>
+        /// <returns>An n-value tuple representing the combined target</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpanTuple<char, char, char, char> Combine(TargetComponent target1, TargetComponent target2, TargetComponent target3, TargetComponent target4)
+        {
+            ReadOnlySpan<char> segment2 = target2.FullName;
+            if (target2.IsRooted)
+            {
+                segment2 = segment2.Slice(1);
+            }
+            ReadOnlySpan<char> segment3 = target3.FullName;
+            if (target3.IsRooted)
+            {
+                segment3 = segment3.Slice(1);
+            }
+            ReadOnlySpan<char> segment4 = target4.FullName;
+            if (target4.IsRooted)
+            {
+                segment4 = segment4.Slice(1);
+            }
+            return ReadOnlySpanTuple.Create(target1.FullName, segment2, segment3, segment4);
+        }
+        /// <summary>
+        /// Combines four target components into a single target
+        /// </summary>
+        /// <param name="target1">The first component to combine</param>
+        /// <param name="target2">The second component to combine</param>
+        /// <param name="target3">The third component to combine</param>
+        /// <param name="target4">The fourth component to combine</param>
+        /// <returns>An n-value tuple representing the combined target</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpanTuple<char, char, char, char> Combine(ReadOnlySpan<char> target1, TargetComponent target2, TargetComponent target3, TargetComponent target4)
+        {
+            ReadOnlySpan<char> segment2 = target2.FullName;
+            if (target2.IsRooted)
+            {
+                segment2 = segment2.Slice(1);
+            }
+            ReadOnlySpan<char> segment3 = target3.FullName;
+            if (target3.IsRooted)
+            {
+                segment3 = segment3.Slice(1);
+            }
+            ReadOnlySpan<char> segment4 = target4.FullName;
+            if (target4.IsRooted)
+            {
+                segment4 = segment4.Slice(1);
+            }
+            return ReadOnlySpanTuple.Create(target1, segment2, segment3, segment4);
+        }
         
         /// <summary>
         /// Returns a string that is the logical parent of <paramref name="source"/>
