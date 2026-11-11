@@ -11,8 +11,24 @@ namespace Soe.Storage
     #else
     internal
     #endif
-    interface IStorageProvider
+    interface IStorageProvider<out DirectoryProvider, out FileProvider>
+        where DirectoryProvider : IDirectoryProvider
+        where FileProvider : IFileProvider
     {
-        
+        /// <summary>
+        /// 
+        /// </summary>
+        DirectoryProvider Directory
+        {
+            get;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        FileProvider File
+        {
+            get;
+        }
     }
 }
