@@ -13,7 +13,7 @@ namespace Soe.Storage
     #else
     internal
     #endif
-    sealed partial class StorageProvider : IStorageProvider<StorageProvider.DirectoryProvider, StorageProvider.FileProvider>
+    sealed partial class StorageProvider : IStorageProvider<StorageProvider.DirectoryProvider, StorageProvider.FileProvider, StorageProvider.ReadOnlyResultIterator>
     {
         private static readonly StorageProvider instance;
         /// <summary>
@@ -25,11 +25,12 @@ namespace Soe.Storage
             get { return instance; }
         }
 
+        private readonly DirectoryProvider directory;
         /// <inheritdoc/>
         public DirectoryProvider Directory
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { throw new NotImplementedException(); }
+            get { return directory; }
         }
 
         /// <inheritdoc/>
@@ -43,6 +44,11 @@ namespace Soe.Storage
         static StorageProvider()
         {
             instance = new StorageProvider();
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private StorageProvider()
+        {
+            this.directory = default;
         }
     }
 }

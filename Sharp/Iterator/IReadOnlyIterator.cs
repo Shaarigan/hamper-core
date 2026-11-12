@@ -13,6 +13,7 @@ namespace System
     internal
     #endif
     interface IReadOnlyIterator<out T>
+        where T : allows ref struct
     {
         /// <summary>
         /// Gets the element in the collection at the current position of this iterator

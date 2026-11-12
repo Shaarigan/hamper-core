@@ -11,16 +11,21 @@ namespace Soe.Storage
     #else
     internal
     #endif
-    interface IDirectoryProvider
+    interface IDirectoryProvider<out TIterator>
+        where TIterator : IReadOnlyIterator<ReadOnlySpan<char>>, allows ref struct
     {
-        void Clear(ResourceIdentifier identifier, bool recursive);
+        void Clear(ReadOnlySpan<char> target, bool recursive);
         
-        void Create(ResourceIdentifier target);
+        void Create(ReadOnlySpan<char> target);
         
-        bool Exists(ResourceIdentifier target);
+        bool Exists(ReadOnlySpan<char> target);
         
+        TIterator GetDirectories(ReadOnlySpan<char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetDirectories(ReadOnlySpan<char> target);
         
+        TIterator GetFiles(ReadOnlySpan<char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetFiles(ReadOnlySpan<char> target);
         
-        void Remove(ResourceIdentifier target);
+        void Remove(ReadOnlySpan<char> target);
     }
 }

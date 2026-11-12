@@ -30,7 +30,7 @@ namespace Soe.Storage
         /// </summary>
         /// <param name="source">The argument string to parse</param>
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref struct ReadOnlyQueryIterator(ReadOnlySpan<char> source)
+        public ref struct ReadOnlyQueryIterator(ReadOnlySpan<char> source) : IReadOnlyIterator<ReadOnlySpanTuple<char, char>>
         {
             private readonly ReadOnlySpan<char> source = source;
             private Range property;

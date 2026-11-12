@@ -13,6 +13,7 @@ namespace System
     internal
     #endif
     interface IIterator<T>
+        where T : allows ref struct
     {
         /// <summary>
         /// Gets a reference to the element in the collection at the current position of this iterator

@@ -11,9 +11,10 @@ namespace Soe.Storage
     #else
     internal
     #endif
-    interface IStorageProvider<out DirectoryProvider, out FileProvider>
-        where DirectoryProvider : IDirectoryProvider
+    interface IStorageProvider<out DirectoryProvider, out FileProvider, TIterator>
+        where DirectoryProvider : IDirectoryProvider<TIterator>
         where FileProvider : IFileProvider
+        where TIterator : IReadOnlyIterator<ReadOnlySpan<char>>, allows ref struct
     {
         /// <summary>
         /// 
