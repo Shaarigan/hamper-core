@@ -10,7 +10,7 @@ namespace System
     #else
     internal
     #endif
-    static partial class EndianExtension
+    static partial class SpanExtension
     {
         // ReSharper disable InvalidXmlDocComment
         

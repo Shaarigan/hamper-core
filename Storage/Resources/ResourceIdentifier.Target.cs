@@ -274,7 +274,7 @@ namespace Soe.Storage
             StringBuilder sb = StringBuilderPool.Shared.Rent();
             try
             {
-                Normalize(source, sb, pathSeparator, source.Length > 0 && (source[0] == Character.PathSeparator || source[0] == Character.PathSeparatorAlternative), flags);
+                Normalize(source,sb, pathSeparator, source.Length > 0 && (source[0] == Character.PathSeparator || source[0] == Character.PathSeparatorAlternative), flags);
                 return sb.ToString();
             }
             finally
@@ -295,13 +295,7 @@ namespace Soe.Storage
             StringBuilder sb = StringBuilderPool.Shared.Rent();
             try
             {
-                Normalize(source.Item1, sb, pathSeparator, source.Item1.Length > 0 && (source.Item1[0] == Character.PathSeparator || source.Item1[0] == Character.PathSeparatorAlternative), flags);
-                if(sb.Length > 0 && !source.Item2.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item2, sb, pathSeparator, false, flags);
-                
+                source.ForEach(Normalize, (sb, pathSeparator, flags));
                 return sb.ToString();
             }
             finally
@@ -322,18 +316,7 @@ namespace Soe.Storage
             StringBuilder sb = StringBuilderPool.Shared.Rent();
             try
             {
-                Normalize(source.Item1, sb, pathSeparator, source.Item1.Length > 0 && (source.Item1[0] == Character.PathSeparator || source.Item1[0] == Character.PathSeparatorAlternative), flags);
-                if(sb.Length > 0 && !source.Item2.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item2, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item3.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item3, sb, pathSeparator, false, flags);
-                
+                source.ForEach(Normalize, (sb, pathSeparator, flags));
                 return sb.ToString();
             }
             finally
@@ -347,29 +330,14 @@ namespace Soe.Storage
         /// <param name="source">The source to be normalized</param>
         /// <param name="flags">Normalization settings for the resulting string</param>
         /// <returns>The normalized string representation of <paramref name="source"/></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Normalize(ReadOnlySpanTuple<char, char, char, char> source, NormalizationFlags flags)
         {
             char pathSeparator = flags.FlagSet(NormalizationFlags.SystemSeparatorChar) ? System.IO.Path.DirectorySeparatorChar : Character.PathSeparator;
             StringBuilder sb = StringBuilderPool.Shared.Rent();
             try
             {
-                Normalize(source.Item1, sb, pathSeparator, source.Item1.Length > 0 && (source.Item1[0] == Character.PathSeparator || source.Item1[0] == Character.PathSeparatorAlternative), flags);
-                if(sb.Length > 0 && !source.Item2.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item2, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item3.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item3, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item4.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item4, sb, pathSeparator, false, flags);
-                
+                source.ForEach(Normalize, (sb, pathSeparator, flags));
                 return sb.ToString();
             }
             finally
@@ -383,34 +351,14 @@ namespace Soe.Storage
         /// <param name="source">The source to be normalized</param>
         /// <param name="flags">Normalization settings for the resulting string</param>
         /// <returns>The normalized string representation of <paramref name="source"/></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Normalize(ReadOnlySpanTuple<char, char, char, char, char> source, NormalizationFlags flags)
         {
             char pathSeparator = flags.FlagSet(NormalizationFlags.SystemSeparatorChar) ? System.IO.Path.DirectorySeparatorChar : Character.PathSeparator;
             StringBuilder sb = StringBuilderPool.Shared.Rent();
             try
             {
-                Normalize(source.Item1, sb, pathSeparator, source.Item1.Length > 0 && (source.Item1[0] == Character.PathSeparator || source.Item1[0] == Character.PathSeparatorAlternative), flags);
-                if(sb.Length > 0 && !source.Item2.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item2, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item3.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item3, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item4.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item4, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item5.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item5, sb, pathSeparator, false, flags);
-                
+                source.ForEach(Normalize, (sb, pathSeparator, flags));
                 return sb.ToString();
             }
             finally
@@ -424,39 +372,14 @@ namespace Soe.Storage
         /// <param name="source">The source to be normalized</param>
         /// <param name="flags">Normalization settings for the resulting string</param>
         /// <returns>The normalized string representation of <paramref name="source"/></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Normalize(ReadOnlySpanTuple<char, char, char, char, char, char> source, NormalizationFlags flags)
         {
             char pathSeparator = flags.FlagSet(NormalizationFlags.SystemSeparatorChar) ? System.IO.Path.DirectorySeparatorChar : Character.PathSeparator;
             StringBuilder sb = StringBuilderPool.Shared.Rent();
             try
             {
-                Normalize(source.Item1, sb, pathSeparator, source.Item1.Length > 0 && (source.Item1[0] == Character.PathSeparator || source.Item1[0] == Character.PathSeparatorAlternative), flags);
-                if(sb.Length > 0 && !source.Item2.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item2, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item3.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item3, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item4.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item4, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item5.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item5, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item6.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item6, sb, pathSeparator, false, flags);
-                
+                source.ForEach(Normalize, (sb, pathSeparator, flags));
                 return sb.ToString();
             }
             finally
@@ -470,44 +393,14 @@ namespace Soe.Storage
         /// <param name="source">The source to be normalized</param>
         /// <param name="flags">Normalization settings for the resulting string</param>
         /// <returns>The normalized string representation of <paramref name="source"/></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Normalize(ReadOnlySpanTuple<char, char, char, char, char, char, char> source, NormalizationFlags flags)
         {
             char pathSeparator = flags.FlagSet(NormalizationFlags.SystemSeparatorChar) ? System.IO.Path.DirectorySeparatorChar : Character.PathSeparator;
             StringBuilder sb = StringBuilderPool.Shared.Rent();
             try
             {
-                Normalize(source.Item1, sb, pathSeparator, source.Item1.Length > 0 && (source.Item1[0] == Character.PathSeparator || source.Item1[0] == Character.PathSeparatorAlternative), flags);
-                if(sb.Length > 0 && !source.Item2.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item2, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item3.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item3, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item4.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item4, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item5.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item5, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item6.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item6, sb, pathSeparator, false, flags);
-                if(sb.Length > 0 && !source.Item7.IsEmpty)
-                {
-                    sb.Append(pathSeparator);
-                }
-                Normalize(source.Item7, sb, pathSeparator, false, flags);
-                
+                source.ForEach(Normalize, (sb, pathSeparator, flags));
                 return sb.ToString();
             }
             finally
@@ -515,30 +408,35 @@ namespace Soe.Storage
                 StringBuilderPool.Shared.Return(sb);
             }
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Normalize(ReadOnlySpan<char> item, ReadOnlySpan<char> next, int index, ValueTuple<StringBuilder, char, NormalizationFlags> parameter)
+        {
+            Normalize(item, parameter.Item1, parameter.Item2, index == 0 && item.Length > 0 && (item[0] == Character.PathSeparator || item[0] == Character.PathSeparatorAlternative), parameter.Item3);
+            if(parameter.Item1.Length > 0 && !next.IsEmpty && parameter.Item1[parameter.Item1.Length - 1] != parameter.Item2)
+            {
+                parameter.Item1.Append(parameter.Item2);
+            }
+        }
         static void Normalize(ReadOnlySpan<char> source, StringBuilder sb, char pathSeparator, bool isRooted, NormalizationFlags flags)
         {
             if (isRooted)
             {
                 sb.Append(pathSeparator);
             }
-            for (int segmentStart = 0, length = source.Length, normalizedStart = sb.Length; segmentStart < length;)
+            for (int segmentStart = 0, length = source.Length, normalizedStart = (flags.FlagSet(NormalizationFlags.AbsolutePath) ? 0 : sb.Length); segmentStart < length;)
             {
-                while (segmentStart < length && (source[segmentStart] == Character.PathSeparator ||
-                                                 source[segmentStart] == Character.PathSeparatorAlternative))
+                while (segmentStart < length && (source[segmentStart] == Character.PathSeparator || source[segmentStart] == Character.PathSeparatorAlternative))
                 {
                     segmentStart++;
                 }
-
                 if (segmentStart < length)
                 {
                     int segmentEnd = segmentStart;
-                    while (segmentEnd < length && source[segmentEnd] != Character.PathSeparator &&
-                           source[segmentEnd] != Character.PathSeparatorAlternative)
+                    while (segmentEnd < length && source[segmentEnd] != Character.PathSeparator && source[segmentEnd] != Character.PathSeparatorAlternative)
                     {
                         segmentEnd++;
                     }
-
                     ReadOnlySpan<char> segment = source.Slice(segmentStart, segmentEnd - segmentStart);
                     if (segment.SequenceEqual("."))
                     {
@@ -557,15 +455,11 @@ namespace Soe.Storage
                                     break;
                                 }
                             }
-
                             if (lastSeparator >= normalizedStart)
                             {
-                                sb.Length = lastSeparator;
+                                sb.Length = lastSeparator + 1;
                             }
-                            else
-                            {
-                                sb.Length = normalizedStart;
-                            }
+                            else sb.Length = normalizedStart;
                         }
                         else if (!isRooted && !flags.FlagSet(NormalizationFlags.AbsolutePath))
                         {
@@ -573,7 +467,6 @@ namespace Soe.Storage
                             {
                                 sb.Append(pathSeparator);
                             }
-
                             sb.Append("..");
                         }
                     }
@@ -583,7 +476,6 @@ namespace Soe.Storage
                         {
                             sb.Append(pathSeparator);
                         }
-
                         for (int i = 0; i < segment.Length; i++)
                         {
                             int offset = Expand(segment.Slice(i), sb);
@@ -594,24 +486,33 @@ namespace Soe.Storage
                             else i += (offset - 1);
                         }
                     }
-
                     segmentStart = segmentEnd;
                 }
                 else break;
+            }
+            if (sb.Length > 1 && sb[sb.Length - 1] == pathSeparator)
+            {
+                sb.Length--;
             }
         }
 
         static int Expand(ReadOnlySpan<char> input, StringBuilder sb)
         {
-            if (input[0] == '~' && (input.Length == 1 || input[1] == Character.PathSeparator || input[1] == Character.PathSeparatorAlternative))
+            if (sb.Length == 0 && input[0] == '~')
             {
-                // Home directory: ~, ~/ or ~\
-                
-                string value = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                if (!string.IsNullOrEmpty(value))
+                int end = 1;
+                while (end < input.Length && input[end] != Character.PathSeparator && input[end] != Character.PathSeparatorAlternative)
                 {
-                    sb.Append(value);
-                    return 1;
+                    end++;
+                }
+                
+                // Home directory: ~, ~username, ~/ or ~\
+                
+                string homeDirectory = GetUserHomeDirectory(input.Slice(1, end - 1));
+                if (!string.IsNullOrEmpty(homeDirectory))
+                {
+                    sb.Append(homeDirectory);
+                    return end;
                 }
             }
             else if (input[0] == '%')
@@ -691,6 +592,16 @@ namespace Soe.Storage
                 }
             }
             return 0;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static string GetUserHomeDirectory(ReadOnlySpan<char> username)
+        {
+            if (username.IsEmpty || username.SequenceEqual(Environment.GetEnvironmentVariable("USER"), OrdnialComparer.Default))
+            {
+                return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            }
+            else return string.Empty;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

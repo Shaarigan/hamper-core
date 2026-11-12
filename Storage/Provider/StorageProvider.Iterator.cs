@@ -18,37 +18,38 @@ namespace Soe.Storage
         /// <param name="offset">The length of the full qualified target</param>
         /// <param name="entries">A collection of entries found at target</param>
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly ref struct ReadOnlyResultIterator(int offset, IEnumerator<string> entries) : IReadOnlyIterator<ReadOnlySpan<char>>
+        public readonly ref struct StorageIterator(int offset, IEnumerator<string> entries) : IStorageIterator
         {
-            /// <summary>
-            /// Gets the element in the collection at the current position of this iterator
-            /// </summary>
-            public ReadOnlySpan<char> Current
+            /// <inheritdoc/>
+            public string Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
+                get { return entries.Current; }
+            }
+
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public ReadOnlySpan<char> AsSpan(bool relative = false)
+            {
+                if(relative)
                 {
-                    int length = offset;
-                    if (entries.Current[0] == ResourceIdentifier.Character.PathSeparator || entries.Current[0] == ResourceIdentifier.Character.PathSeparatorAlternative)
+                    ReadOnlySpan<char> result = Current.AsSpan(offset);
+                    if (Current[0] == ResourceIdentifier.Character.PathSeparator || Current[0] == ResourceIdentifier.Character.PathSeparatorAlternative)
                     {
-                        length++;
+                        result = result.Slice(1);
                     }
-                    return entries.Current.AsSpan(length);
+                    return result;
                 }
+                else return Current;
             }
             
-            /// <summary>
-            /// Advances the iterator to the next element of the collection
-            /// </summary>
-            /// <returns>True if the iterator was successfully advanced to the next element, false otherwise</returns>
+            /// <inheritdoc/>
             public bool MoveNext()
             {
                 return entries.MoveNext();
             }
 
-            /// <summary>
-            /// Sets the iterator to its initial position
-            /// </summary>
+            /// <inheritdoc/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Reset()
             {

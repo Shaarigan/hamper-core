@@ -13,7 +13,7 @@ namespace Soe.Storage
     #endif
     sealed partial class StorageProvider
     {
-        public struct DirectoryProvider : IDirectoryProvider<ReadOnlyResultIterator>
+        public struct DirectoryProvider : IDirectoryProvider<StorageIterator>
         {
             public void Clear(ReadOnlySpan<char> target, bool recursive)
             {
@@ -30,88 +30,198 @@ namespace Soe.Storage
                 throw new NotImplementedException();
             }
 
+            #region GetDirectories
+            /// <inheritdoc/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public ReadOnlyResultIterator GetDirectories(ReadOnlySpan<char> target, string searchPattern, SearchOption searchOptions)
+            public StorageIterator GetDirectories(ReadOnlySpan<char> target, string searchPattern, SearchOption searchOptions)
             {
-                if (target.Length > 0 && (target[0] == ResourceIdentifier.Character.PathSeparator ||
-                                          target[0] == ResourceIdentifier.Character.PathSeparatorAlternative))
-                {
-                    target = target.Slice(1);
-                }
-                if (target.Length > 0 && (target[target.Length - 1] == ResourceIdentifier.Character.PathSeparator ||
-                                          target[target.Length - 1] == ResourceIdentifier.Character.PathSeparatorAlternative))
-                {
-                    target = target.Slice(0, target.Length - 1);
-                }
-                return new ReadOnlyResultIterator(target.Length, System.IO.Directory.EnumerateDirectories
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetDirectories(ReadOnlySpanTuple<char, char> target, string searchPattern, SearchOption searchOptions)
+            {
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetDirectories(ReadOnlySpanTuple<char, char, char> target, string searchPattern, SearchOption searchOptions)
+            {
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char> target, string searchPattern, SearchOption searchOptions)
+            {
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char, char> target, string searchPattern, SearchOption searchOptions)
+            {
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char, char, char> target, string searchPattern, SearchOption searchOptions)
+            {
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            StorageIterator GetDirectories(string target, string searchPattern, SearchOption searchOptions)
+            {
+                return new StorageIterator(target.Length, System.IO.Directory.EnumerateDirectories
                 (
-                    ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar),
+                    target,
                     searchPattern,
                     searchOptions
 
                 ).GetEnumerator());
             }
+            
+            /// <inheritdoc/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public ReadOnlyResultIterator GetDirectories(ReadOnlySpan<char> target)
+            public StorageIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char, char, char> target)
             {
-                if (target.Length > 0 && (target[0] == ResourceIdentifier.Character.PathSeparator ||
-                                          target[0] == ResourceIdentifier.Character.PathSeparatorAlternative))
-                {
-                    target = target.Slice(1);
-                }
-                if (target.Length > 0 && (target[target.Length - 1] == ResourceIdentifier.Character.PathSeparator ||
-                                          target[target.Length - 1] == ResourceIdentifier.Character.PathSeparatorAlternative))
-                {
-                    target = target.Slice(0, target.Length - 1);
-                }
-                return new ReadOnlyResultIterator(target.Length, System.IO.Directory.EnumerateDirectories
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char, char> target)
+            {
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char> target)
+            {
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetDirectories(ReadOnlySpanTuple<char, char, char> target)
+            {
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetDirectories(ReadOnlySpanTuple<char, char> target)
+            {
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetDirectories(ReadOnlySpan<char> target)
+            {
+                return GetDirectories(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            StorageIterator GetDirectories(string target)
+            {
+                return new StorageIterator(target.Length, System.IO.Directory.EnumerateDirectories
                 (
-                    ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar)
+                    target
 
                 ).GetEnumerator());
             }
-
+            #endregion
+            
+            #region GetFiles
+            /// <inheritdoc/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public ReadOnlyResultIterator GetFiles(ReadOnlySpan<char> target, string searchPattern, SearchOption searchOptions)
+            public StorageIterator GetFiles(ReadOnlySpan<char> target, string searchPattern, SearchOption searchOptions)
             {
-                if (target.Length > 0 && (target[0] == ResourceIdentifier.Character.PathSeparator ||
-                                          target[0] == ResourceIdentifier.Character.PathSeparatorAlternative))
-                {
-                    target = target.Slice(1);
-                }
-                if (target.Length > 0 && (target[target.Length - 1] == ResourceIdentifier.Character.PathSeparator ||
-                                          target[target.Length - 1] == ResourceIdentifier.Character.PathSeparatorAlternative))
-                {
-                    target = target.Slice(0, target.Length - 1);
-                }
-                return new ReadOnlyResultIterator(target.Length, System.IO.Directory.EnumerateFiles
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetFiles(ReadOnlySpanTuple<char, char> target, string searchPattern, SearchOption searchOptions)
+            {
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetFiles(ReadOnlySpanTuple<char, char, char> target, string searchPattern, SearchOption searchOptions)
+            {
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetFiles(ReadOnlySpanTuple<char, char, char, char> target, string searchPattern, SearchOption searchOptions)
+            {
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetFiles(ReadOnlySpanTuple<char, char, char, char, char> target, string searchPattern, SearchOption searchOptions)
+            {
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetFiles(ReadOnlySpanTuple<char, char, char, char, char, char> target, string searchPattern, SearchOption searchOptions)
+            {
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath), searchPattern, searchOptions);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            StorageIterator GetFiles(string target, string searchPattern, SearchOption searchOptions)
+            {
+                return new StorageIterator(target.Length, System.IO.Directory.EnumerateFiles
                 (
-                    ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar),
+                    target,
                     searchPattern,
                     searchOptions
 
                 ).GetEnumerator());
             }
+            
+            /// <inheritdoc/>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public ReadOnlyResultIterator GetFiles(ReadOnlySpan<char> target)
+            public StorageIterator GetFiles(ReadOnlySpanTuple<char, char, char, char, char, char> target)
             {
-                if (target.Length > 0 && (target[0] == ResourceIdentifier.Character.PathSeparator ||
-                                          target[0] == ResourceIdentifier.Character.PathSeparatorAlternative))
-                {
-                    target = target.Slice(1);
-                }
-                if (target.Length > 0 && (target[target.Length - 1] == ResourceIdentifier.Character.PathSeparator ||
-                                          target[target.Length - 1] == ResourceIdentifier.Character.PathSeparatorAlternative))
-                {
-                    target = target.Slice(0, target.Length - 1);
-                }
-                return new ReadOnlyResultIterator(target.Length, System.IO.Directory.EnumerateFiles
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetFiles(ReadOnlySpanTuple<char, char, char, char, char> target)
+            {
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetFiles(ReadOnlySpanTuple<char, char, char, char> target)
+            {
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetFiles(ReadOnlySpanTuple<char, char, char> target)
+            {
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetFiles(ReadOnlySpanTuple<char, char> target)
+            {
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            /// <inheritdoc/>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public StorageIterator GetFiles(ReadOnlySpan<char> target)
+            {
+                return GetFiles(ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar | NormalizationFlags.AbsolutePath));
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            StorageIterator GetFiles(string target)
+            {
+                return new StorageIterator(target.Length, System.IO.Directory.EnumerateFiles
                 (
-                    ResourceIdentifier.Normalize(target, NormalizationFlags.SystemSeparatorChar)
+                    target
 
                 ).GetEnumerator());
             }
-
+            #endregion
+            
             public void Remove(ReadOnlySpan<char> target)
             {
                 throw new NotImplementedException();

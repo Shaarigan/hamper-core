@@ -12,7 +12,7 @@ namespace Soe.Storage
     internal
     #endif
     interface IDirectoryProvider<out TIterator>
-        where TIterator : IReadOnlyIterator<ReadOnlySpan<char>>, allows ref struct
+        where TIterator : IStorageIterator, allows ref struct
     {
         void Clear(ReadOnlySpan<char> target, bool recursive);
         
@@ -20,11 +20,35 @@ namespace Soe.Storage
         
         bool Exists(ReadOnlySpan<char> target);
         
+        #region GetDirectories
         TIterator GetDirectories(ReadOnlySpan<char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetDirectories(ReadOnlySpanTuple<char, char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetDirectories(ReadOnlySpanTuple<char, char, char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char, char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char, char, char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char, char, char> target);
+        TIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char, char> target);
+        TIterator GetDirectories(ReadOnlySpanTuple<char, char, char, char> target);
+        TIterator GetDirectories(ReadOnlySpanTuple<char, char, char> target);
+        TIterator GetDirectories(ReadOnlySpanTuple<char, char> target);
         TIterator GetDirectories(ReadOnlySpan<char> target);
+        #endregion
         
+        #region GetFiles
         TIterator GetFiles(ReadOnlySpan<char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetFiles(ReadOnlySpanTuple<char, char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetFiles(ReadOnlySpanTuple<char, char, char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetFiles(ReadOnlySpanTuple<char, char, char, char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetFiles(ReadOnlySpanTuple<char, char, char, char, char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetFiles(ReadOnlySpanTuple<char, char, char, char, char, char> target, string searchPattern, SearchOption searchOptions);
+        TIterator GetFiles(ReadOnlySpanTuple<char, char, char, char, char, char> target);
+        TIterator GetFiles(ReadOnlySpanTuple<char, char, char, char, char> target);
+        TIterator GetFiles(ReadOnlySpanTuple<char, char, char, char> target);
+        TIterator GetFiles(ReadOnlySpanTuple<char, char, char> target);
+        TIterator GetFiles(ReadOnlySpanTuple<char, char> target);
         TIterator GetFiles(ReadOnlySpan<char> target);
+        #endregion
         
         void Remove(ReadOnlySpan<char> target);
     }

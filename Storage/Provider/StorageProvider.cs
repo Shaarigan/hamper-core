@@ -13,7 +13,7 @@ namespace Soe.Storage
     #else
     internal
     #endif
-    sealed partial class StorageProvider : IStorageProvider<StorageProvider.DirectoryProvider, StorageProvider.FileProvider, StorageProvider.ReadOnlyResultIterator>
+    sealed partial class StorageProvider : IStorageProvider<StorageProvider.DirectoryProvider, StorageProvider.FileProvider, StorageProvider.StorageIterator>
     {
         private static readonly StorageProvider instance;
         /// <summary>

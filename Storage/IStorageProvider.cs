@@ -14,7 +14,7 @@ namespace Soe.Storage
     interface IStorageProvider<out DirectoryProvider, out FileProvider, TIterator>
         where DirectoryProvider : IDirectoryProvider<TIterator>
         where FileProvider : IFileProvider
-        where TIterator : IReadOnlyIterator<ReadOnlySpan<char>>, allows ref struct
+        where TIterator : IStorageIterator, allows ref struct
     {
         /// <summary>
         /// 
