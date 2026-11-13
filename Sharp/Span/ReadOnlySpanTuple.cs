@@ -190,6 +190,13 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return 1; }
         }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return item1.Length; }
+        }
     }
     /// <summary>
     /// Represents an n-value tuple, where n is 2
@@ -231,6 +238,13 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return 2; }
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length); }
         }
     }
     /// <summary>
@@ -285,6 +299,13 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return 3; }
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length); }
         }
     }
     /// <summary>
@@ -351,6 +372,13 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return 4; }
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length + item4.Length); }
         }
     }
     /// <summary>
@@ -429,6 +457,13 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return 5; }
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length + item4.Length + item5.Length); }
         }
     }
     /// <summary>
@@ -519,6 +554,13 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return 6; }
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length + item4.Length + item5.Length + item6.Length); }
         }
     }
     /// <summary>
@@ -621,6 +663,13 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return 7; }
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length + item4.Length + item5.Length + item6.Length + item7.Length); }
         }
     }
     /// <summary>
@@ -735,6 +784,13 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return (7 + rest.Count); }
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length + item4.Length + item5.Length + item6.Length + item7.Length + rest.Length); }
         }
     }
 }

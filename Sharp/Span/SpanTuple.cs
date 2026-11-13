@@ -198,6 +198,13 @@ namespace System
         {
             return new ReadOnlySpanTuple<T>(tuple.item1);
         }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return item1.Length; }
+        }
     }
     /// <summary>
     /// Represents an n-value tuple, where n is 2
@@ -247,6 +254,13 @@ namespace System
         public static implicit operator ReadOnlySpanTuple<T1, T2>(SpanTuple<T1, T2> tuple)
         {
             return new ReadOnlySpanTuple<T1, T2>(tuple.item1, tuple.item2);
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length); }
         }
     }
     /// <summary>
@@ -309,6 +323,13 @@ namespace System
         public static implicit operator ReadOnlySpanTuple<T1, T2, T3>(SpanTuple<T1, T2, T3> tuple)
         {
             return new ReadOnlySpanTuple<T1, T2, T3>(tuple.item1, tuple.item2, tuple.item3);
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length); }
         }
     }
     /// <summary>
@@ -383,6 +404,13 @@ namespace System
         public static implicit operator ReadOnlySpanTuple<T1, T2, T3, T4>(SpanTuple<T1, T2, T3, T4> tuple)
         {
             return new ReadOnlySpanTuple<T1, T2, T3, T4>(tuple.item1, tuple.item2, tuple.item3, tuple.item4);
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length + item4.Length); }
         }
     }
     /// <summary>
@@ -469,6 +497,13 @@ namespace System
         public static implicit operator ReadOnlySpanTuple<T1, T2, T3, T4, T5>(SpanTuple<T1, T2, T3, T4, T5> tuple)
         {
             return new ReadOnlySpanTuple<T1, T2, T3, T4, T5>(tuple.item1, tuple.item2, tuple.item3, tuple.item4, tuple.item5);
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length + item4.Length + item5.Length); }
         }
     }
     /// <summary>
@@ -567,6 +602,13 @@ namespace System
         public static implicit operator ReadOnlySpanTuple<T1, T2, T3, T4, T5, T6>(SpanTuple<T1, T2, T3, T4, T5, T6> tuple)
         {
             return new ReadOnlySpanTuple<T1, T2, T3, T4, T5, T6>(tuple.item1, tuple.item2, tuple.item3, tuple.item4, tuple.item5, tuple.item6);
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length + item4.Length + item5.Length + item6.Length); }
         }
     }
     /// <summary>
@@ -677,6 +719,13 @@ namespace System
         public static implicit operator ReadOnlySpanTuple<T1, T2, T3, T4, T5, T6, T7>(SpanTuple<T1, T2, T3, T4, T5, T6, T7> tuple)
         {
             return new ReadOnlySpanTuple<T1, T2, T3, T4, T5, T6, T7>(tuple.item1, tuple.item2, tuple.item3, tuple.item4, tuple.item5, tuple.item6, tuple.item7);
+        }
+        
+        /// <inheritdoc/>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length + item4.Length + item5.Length + item6.Length + item7.Length); }
         }
     }
     /// <summary>
@@ -793,6 +842,15 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return (7 + rest.Count); }
+        }
+        
+        /// <summary>
+        /// Gets the total length of the memory managed by elements in this tuple
+        /// </summary>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (item1.Length + item2.Length + item3.Length + item4.Length + item5.Length + item6.Length + item7.Length + rest.Length); }
         }
     }
 }

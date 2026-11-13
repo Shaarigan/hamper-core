@@ -20,5 +20,13 @@ namespace System
         {
             get;
         }
+
+        /// <summary>
+        /// Gets the total length of the memory managed by elements in this tuple
+        /// </summary>
+        int Length
+        {
+            get;
+        }
     }
 }

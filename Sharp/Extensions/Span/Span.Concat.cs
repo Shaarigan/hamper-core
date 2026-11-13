@@ -12,6 +12,39 @@ namespace System
     #endif
     static partial class SpanExtension
     {
+        [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+        readonly ref struct ParameterTuple(Span<char> destination, Ref<int> offset, char separator)
+        {
+            private readonly Span<char> destination = destination;
+            /// <summary>
+            /// Gets the string buffer to fill
+            /// </summary>
+            public Span<char> Destination
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get { return destination; }
+            }
+
+            private readonly Ref<int> offset = offset;
+            /// <summary>
+            /// Gets the current offset within the buffer
+            /// </summary>
+            public ref int Offset
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get { return ref offset.Value; }
+            }
+
+            /// <summary>
+            /// Gets the separator to add between segments
+            /// </summary>
+            public char Separator
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get { return separator; }
+            }
+        }
+        
         // ReSharper disable InvalidXmlDocComment
         
         /// <summary>
@@ -30,16 +63,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char> tuple)
         {
-            return string.Create(tuple.Item1.Length + tuple.Item2.Length, tuple, Create);
-
-            static void Create(Span<char> destination, ReadOnlySpanTuple<char, char> tuple)
+            return string.Create(tuple.Length, tuple, Create);
+            void Create(Span<char> destination, ReadOnlySpanTuple<char, char> t)
             {
                 int offset = 0;
-
-                tuple.Item1.CopyTo(destination.Slice(offset));
-                offset += tuple.Item1.Length;
-
-                tuple.Item2.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), '\0'));
             }
         }
         /// <summary>
@@ -50,27 +78,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char> tuple, char separator)
         {
-            int length = tuple.Item1.Length;
-            if (length > 0 && !tuple.Item2.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item2.Length;
+            int length = 0;
+            tuple.ForEach(GetFinalLength, new Ref<int>(ref length));
             
             return string.Create(length, tuple, Create);
             void Create(Span<char> destination, ReadOnlySpanTuple<char, char> t)
             {
                 int offset = 0;
-
-                t.Item1.CopyTo(destination.Slice(offset));
-                offset += t.Item1.Length;
-
-                if (offset > 0 && !t.Item2.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-                
-                t.Item2.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), separator));
             }
         }
         /// <summary>
@@ -80,23 +95,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char, char> tuple)
         {
-            return string.Create(tuple.Item1.Length + 
-                          tuple.Item2.Length + 
-                          tuple.Item3.Length, 
-                tuple, 
-                Create);
-
-            static void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char> tuple)
+            return string.Create(tuple.Length, tuple, Create);
+            void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char> t)
             {
                 int offset = 0;
-
-                tuple.Item1.CopyTo(destination.Slice(offset));
-                offset += tuple.Item1.Length;
-
-                tuple.Item2.CopyTo(destination.Slice(offset));
-                offset += tuple.Item2.Length;
-
-                tuple.Item3.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), '\0'));
             }
         }
         /// <summary>
@@ -107,40 +110,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char, char> tuple, char separator)
         {
-            int length = tuple.Item1.Length;
-            if (length > 0 && !tuple.Item2.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item2.Length;
-            if (length > 0 && !tuple.Item3.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item3.Length;
+            int length = 0;
+            tuple.ForEach(GetFinalLength, new Ref<int>(ref length));
             
             return string.Create(length, tuple, Create);
             void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char> t)
             {
                 int offset = 0;
-
-                t.Item1.CopyTo(destination.Slice(offset));
-                offset += t.Item1.Length;
-
-                if (offset > 0 && !t.Item2.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-                
-                t.Item2.CopyTo(destination.Slice(offset));
-                offset += t.Item2.Length;
-                
-                if (offset > 0 && !t.Item3.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item3.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), separator));
             }
         }
         /// <summary>
@@ -150,27 +127,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char, char, char> tuple)
         {
-            return string.Create(tuple.Item1.Length + 
-                          tuple.Item2.Length + 
-                          tuple.Item3.Length + 
-                          tuple.Item4.Length, 
-                tuple, 
-                Create);
-
-            static void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char> tuple)
+            return string.Create(tuple.Length, tuple, Create);
+            void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char> t)
             {
                 int offset = 0;
-
-                tuple.Item1.CopyTo(destination.Slice(offset));
-                offset += tuple.Item1.Length;
-
-                tuple.Item2.CopyTo(destination.Slice(offset));
-                offset += tuple.Item2.Length;
-
-                tuple.Item3.CopyTo(destination.Slice(offset));
-                offset += tuple.Item3.Length;
-
-                tuple.Item4.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), '\0'));
             }
         }
         /// <summary>
@@ -181,53 +142,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char, char, char> tuple, char separator)
         {
-            int length = tuple.Item1.Length;
-            if (length > 0 && !tuple.Item2.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item2.Length;
-            if (length > 0 && !tuple.Item3.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item3.Length;
-            if (length > 0 && !tuple.Item4.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item4.Length;
+            int length = 0;
+            tuple.ForEach(GetFinalLength, new Ref<int>(ref length));
             
             return string.Create(length, tuple, Create);
             void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char> t)
             {
                 int offset = 0;
-
-                t.Item1.CopyTo(destination.Slice(offset));
-                offset += t.Item1.Length;
-
-                if (offset > 0 && !t.Item2.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-                
-                t.Item2.CopyTo(destination.Slice(offset));
-                offset += t.Item2.Length;
-                
-                if (offset > 0 && !t.Item3.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item3.CopyTo(destination.Slice(offset));
-                offset += t.Item3.Length;
-                
-                if (offset > 0 && !t.Item4.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item4.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), separator));
             }
         }
         /// <summary>
@@ -237,31 +159,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char, char, char, char> tuple)
         {
-            return string.Create(tuple.Item1.Length + 
-                          tuple.Item2.Length + 
-                          tuple.Item3.Length + 
-                          tuple.Item4.Length + 
-                          tuple.Item5.Length, 
-                tuple, 
-                Create);
-
-            static void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char, char> tuple)
+            return string.Create(tuple.Length, tuple, Create);
+            void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char, char> t)
             {
                 int offset = 0;
-
-                tuple.Item1.CopyTo(destination.Slice(offset));
-                offset += tuple.Item1.Length;
-
-                tuple.Item2.CopyTo(destination.Slice(offset));
-                offset += tuple.Item2.Length;
-
-                tuple.Item3.CopyTo(destination.Slice(offset));
-                offset += tuple.Item3.Length;
-
-                tuple.Item4.CopyTo(destination.Slice(offset));
-                offset += tuple.Item4.Length;
-
-                tuple.Item5.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), '\0'));
             }
         }
         /// <summary>
@@ -272,66 +174,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char, char, char, char> tuple, char separator)
         {
-            int length = tuple.Item1.Length;
-            if (length > 0 && !tuple.Item2.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item2.Length;
-            if (length > 0 && !tuple.Item3.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item3.Length;
-            if (length > 0 && !tuple.Item4.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item4.Length;
-            if (length > 0 && !tuple.Item5.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item5.Length;
+            int length = 0;
+            tuple.ForEach(GetFinalLength, new Ref<int>(ref length));
             
             return string.Create(length, tuple, Create);
             void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char, char> t)
             {
                 int offset = 0;
-
-                t.Item1.CopyTo(destination.Slice(offset));
-                offset += t.Item1.Length;
-
-                if (offset > 0 && !t.Item2.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-                
-                t.Item2.CopyTo(destination.Slice(offset));
-                offset += t.Item2.Length;
-                
-                if (offset > 0 && !t.Item3.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item3.CopyTo(destination.Slice(offset));
-                offset += t.Item3.Length;
-                
-                if (offset > 0 && !t.Item4.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item4.CopyTo(destination.Slice(offset));
-                offset += t.Item4.Length;
-                
-                if (offset > 0 && !t.Item5.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item5.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), separator));
             }
         }
         /// <summary>
@@ -341,35 +191,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char, char, char, char, char> tuple)
         {
-            return string.Create(tuple.Item1.Length + 
-                          tuple.Item2.Length + 
-                          tuple.Item3.Length + 
-                          tuple.Item4.Length + 
-                          tuple.Item5.Length + 
-                          tuple.Item6.Length, 
-                tuple, 
-                Create);
-
-            static void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char, char, char> tuple)
+            return string.Create(tuple.Length, tuple, Create);
+            void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char, char, char> t)
             {
                 int offset = 0;
-
-                tuple.Item1.CopyTo(destination.Slice(offset));
-                offset += tuple.Item1.Length;
-
-                tuple.Item2.CopyTo(destination.Slice(offset));
-                offset += tuple.Item2.Length;
-
-                tuple.Item3.CopyTo(destination.Slice(offset));
-                offset += tuple.Item3.Length;
-
-                tuple.Item4.CopyTo(destination.Slice(offset));
-                offset += tuple.Item4.Length;
-
-                tuple.Item5.CopyTo(destination.Slice(offset));
-                offset += tuple.Item5.Length;
-
-                tuple.Item6.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), '\0'));
             }
         }
         /// <summary>
@@ -380,79 +206,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char, char, char, char, char> tuple, char separator)
         {
-            int length = tuple.Item1.Length;
-            if (length > 0 && !tuple.Item2.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item2.Length;
-            if (length > 0 && !tuple.Item3.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item3.Length;
-            if (length > 0 && !tuple.Item4.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item4.Length;
-            if (length > 0 && !tuple.Item5.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item5.Length;
-            if (length > 0 && !tuple.Item6.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item6.Length;
+            int length = 0;
+            tuple.ForEach(GetFinalLength, new Ref<int>(ref length));
             
             return string.Create(length, tuple, Create);
             void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char, char, char> t)
             {
                 int offset = 0;
-
-                t.Item1.CopyTo(destination.Slice(offset));
-                offset += t.Item1.Length;
-
-                if (offset > 0 && !t.Item2.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-                
-                t.Item2.CopyTo(destination.Slice(offset));
-                offset += t.Item2.Length;
-                
-                if (offset > 0 && !t.Item3.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item3.CopyTo(destination.Slice(offset));
-                offset += t.Item3.Length;
-                
-                if (offset > 0 && !t.Item4.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item4.CopyTo(destination.Slice(offset));
-                offset += t.Item4.Length;
-                
-                if (offset > 0 && !t.Item5.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item5.CopyTo(destination.Slice(offset));
-                offset += t.Item5.Length;
-                
-                if (offset > 0 && !t.Item6.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item6.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), separator));
             }
         }
         /// <summary>
@@ -462,39 +223,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char, char, char, char, char, char> tuple)
         {
-            return string.Create(tuple.Item1.Length + 
-                          tuple.Item2.Length + 
-                          tuple.Item3.Length + 
-                          tuple.Item4.Length + 
-                          tuple.Item5.Length + 
-                          tuple.Item6.Length + 
-                          tuple.Item7.Length, 
-                tuple, 
-                Create);
-
-            static void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char, char, char, char> tuple)
+            return string.Create(tuple.Length, tuple, Create);
+            void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char, char, char, char> t)
             {
                 int offset = 0;
-
-                tuple.Item1.CopyTo(destination.Slice(offset));
-                offset += tuple.Item1.Length;
-
-                tuple.Item2.CopyTo(destination.Slice(offset));
-                offset += tuple.Item2.Length;
-
-                tuple.Item3.CopyTo(destination.Slice(offset));
-                offset += tuple.Item3.Length;
-
-                tuple.Item4.CopyTo(destination.Slice(offset));
-                offset += tuple.Item4.Length;
-
-                tuple.Item5.CopyTo(destination.Slice(offset));
-                offset += tuple.Item5.Length;
-
-                tuple.Item6.CopyTo(destination.Slice(offset));
-                offset += tuple.Item6.Length;
-
-                tuple.Item7.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), '\0'));
             }
         }
         /// <summary>
@@ -505,95 +238,39 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Concat(this ReadOnlySpanTuple<char, char, char, char, char, char, char> tuple, char separator)
         {
-            int length = tuple.Item1.Length;
-            if (length > 0 && !tuple.Item2.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item2.Length;
-            if (length > 0 && !tuple.Item3.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item3.Length;
-            if (length > 0 && !tuple.Item4.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item4.Length;
-            if (length > 0 && !tuple.Item5.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item5.Length;
-            if (length > 0 && !tuple.Item6.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item6.Length;
-            if (length > 0 && !tuple.Item7.IsEmpty)
-            {
-                length++;
-            }
-            length += tuple.Item7.Length;
+            int length = 0;
+            tuple.ForEach(GetFinalLength, new Ref<int>(ref length));
             
             return string.Create(length, tuple, Create);
             void Create(Span<char> destination, ReadOnlySpanTuple<char, char, char, char, char, char, char> t)
             {
                 int offset = 0;
-
-                t.Item1.CopyTo(destination.Slice(offset));
-                offset += t.Item1.Length;
-
-                if (offset > 0 && !t.Item2.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-                
-                t.Item2.CopyTo(destination.Slice(offset));
-                offset += t.Item2.Length;
-                
-                if (offset > 0 && !t.Item3.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item3.CopyTo(destination.Slice(offset));
-                offset += t.Item3.Length;
-                
-                if (offset > 0 && !t.Item4.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item4.CopyTo(destination.Slice(offset));
-                offset += t.Item4.Length;
-                
-                if (offset > 0 && !t.Item5.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item5.CopyTo(destination.Slice(offset));
-                offset += t.Item5.Length;
-                
-                if (offset > 0 && !t.Item6.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item6.CopyTo(destination.Slice(offset));
-                offset += t.Item6.Length;
-                
-                if (offset > 0 && !t.Item7.IsEmpty)
-                {
-                    destination[offset++] = separator;
-                }
-
-                t.Item7.CopyTo(destination.Slice(offset));
+                t.ForEach(FillString, new ParameterTuple(destination, new Ref<int>(ref offset), separator));
             }
         }
-        
+
         // ReSharper restore InvalidXmlDocComment
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void GetFinalLength(ReadOnlySpan<char> item, ReadOnlySpan<char> next, int index, Ref<int> param)
+        {
+            param.Value += item.Length;
+            if (param.Value > 0 && !next.IsEmpty)
+            {
+                param.Value++;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void FillString(ReadOnlySpan<char> item, ReadOnlySpan<char> next, int index, ParameterTuple param)
+        {
+            item.CopyTo(param.Destination.Slice(param.Offset));
+            param.Offset += item.Length;
+
+            if (param.Separator != 0 && param.Offset > 0 && !next.IsEmpty)
+            {
+                param.Destination[param.Offset++] = param.Separator;
+            }
+        }
     }
 }
