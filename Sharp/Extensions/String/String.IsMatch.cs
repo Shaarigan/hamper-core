@@ -26,6 +26,14 @@ namespace System
         /// Provides the character used to perform character escaping
         /// </summary>
         public const char EscapeDelimiter = '\\';
+        /// <summary>
+        /// Provides the character used to declare a sequence of characters
+        /// </summary>
+        public const char SequenceStart = '[';
+        /// <summary>
+        /// Provides the character used to end a sequence of characters
+        /// </summary>
+        public const char SequenceEnd = ']';
         
         /// <summary>
         /// Indicates whether the specified expression pattern matches this input string
@@ -33,13 +41,17 @@ namespace System
         /// <param name="pattern">A simple expression pattern to match</param>
         /// <param name="flag">An enumeration value that controls expression pattern matching</param>
         /// <returns>True if the expression pattern matches, false otherwise</returns>
-        /// <remarks>The expression pattern allows for wildcard characters ? (single match) and * (matches a range). Those
-        /// characters need to be escaped in order to match as a single character instead.
+        /// <remarks>The expression pattern allows for wildcard characters ? (single match) * (matches a range) and
+        /// character ranges [] (any character in the sequence). Those characters need to be escaped in order to match
+        /// as a single character instead.
         /// 
         /// Pattern must be all lower case in order to allow MatchingFlags.IgnoreCase and MatchingFlags.Invariant
         /// to work</remarks>
         public static bool IsMatch(this ReadOnlySpan<char> s, ReadOnlySpan<char> pattern, MatchingFlags flag)
         {
+            ReadOnlySpan<char> sequence = ReadOnlySpan<char>.Empty;
+            int sequenceIndex = 0;
+            
             for (int stringIndex = 0, stringPointer = 0, stringLength = s.Length, patternIndex = 0, patternPointer = 0, patternLength = pattern.Length; patternIndex < patternLength || stringIndex < stringLength;)
             {
                 if (patternIndex < patternLength)
@@ -47,6 +59,46 @@ namespace System
                     int controlChar = pattern[patternIndex];
                     switch (controlChar)
                     {
+                        #region Sequence
+                        case SequenceStart: if (stringIndex < stringLength)
+                            {
+                                #region Parse
+                                if (sequenceIndex != patternIndex)
+                                {
+                                    sequenceIndex = patternIndex;
+                                    for (int start = ++patternIndex; patternIndex < patternLength; patternIndex++)
+                                    {
+                                        if (pattern[patternIndex] == SequenceEnd)
+                                        {
+                                            sequence = pattern.Slice(start, patternIndex - start);
+                                            patternIndex++;
+                                            break;
+                                        }
+                                    }
+                                }
+                                else patternIndex += (sequence.Length + 2);
+                                #endregion
+                                
+                                if (!sequence.IsEmpty)
+                                {
+                                    char current;
+                                    switch (flag)
+                                    {
+                                        case MatchingFlags.IgnoreCase: current = Char.ToLower(s[stringIndex]); break;
+                                        case MatchingFlags.Invariant: current = Char.ToLowerInvariant(s[stringIndex]); break;
+                                        default: current = s[stringIndex]; break;
+                                    }
+                                    if (sequence.Contains(current))
+                                    {
+                                        stringIndex++;
+                                        continue;
+                                    }
+                                }
+                                break;
+                            }
+                            else break;
+                        #endregion
+                        
                         #region Wildcard character
                         case WildcardCharacterDelimiter: if (stringIndex < stringLength)
                             {
@@ -78,20 +130,24 @@ namespace System
                         #region Anything else
                         default:
                             {
-                                char current;
-                                switch (flag)
+                                if (stringIndex < stringLength)
                                 {
-                                    case MatchingFlags.IgnoreCase: current = Char.ToLower(s[stringIndex]); break;
-                                    case MatchingFlags.Invariant: current = Char.ToLowerInvariant(s[stringIndex]); break;
-                                    default: current = s[stringIndex]; break;
+                                    char current;
+                                    switch (flag)
+                                    {
+                                        case MatchingFlags.IgnoreCase: current = Char.ToLower(s[stringIndex]); break;
+                                        case MatchingFlags.Invariant:
+                                            current = Char.ToLowerInvariant(s[stringIndex]); break;
+                                        default: current = s[stringIndex]; break;
+                                    }
+                                    if (current == controlChar)
+                                    {
+                                        patternIndex++;
+                                        stringIndex++;
+                                        continue;
+                                    }
                                 }
-                                if (stringIndex < stringLength && current == controlChar)
-                                {
-                                    patternIndex++;
-                                    stringIndex++;
-                                    continue;
-                                }
-                                else break;
+                                break;
                             }
                         #endregion
                     }
@@ -114,8 +170,9 @@ namespace System
         /// <param name="pattern">A simple expression pattern to match</param>
         /// <param name="flag">An enumeration value that controls expression pattern matching</param>
         /// <returns>True if the expression pattern matches, false otherwise</returns>
-        /// <remarks>The expression pattern allows for wildcard characters ? (single match) and * (matches a range). Those
-        /// characters need to be escaped in order to match as a single character instead.
+        /// <remarks>The expression pattern allows for wildcard characters ? (single match) * (matches a range) and
+        /// character ranges [] (any character in the sequence). Those characters need to be escaped in order to match
+        /// as a single character instead.
         /// 
         /// Pattern must be all lower case in order to allow MatchingFlags.IgnoreCase and MatchingFlags.Invariant
         /// to work</remarks>
@@ -125,12 +182,61 @@ namespace System
             return IsMatch(s.AsSpan(), pattern, flag);
         }
         /// <summary>
+        /// Indicates whether any of the specified expressions pattern matches this input string
+        /// </summary>
+        /// <param name="patterns">A simple expression pattern to match</param>
+        /// <param name="flag">An enumeration value that controls expression pattern matching</param>
+        /// <returns>True if the expression pattern matches, false otherwise</returns>
+        /// <remarks>The expression pattern allows for wildcard characters ? (single match) * (matches a range) and
+        /// character ranges [] (any character in the sequence). Those characters need to be escaped in order to match
+        /// as a single character instead.
+        /// 
+        /// Pattern must be all lower case in order to allow MatchingFlags.IgnoreCase and MatchingFlags.Invariant
+        /// to work</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsMatch(this ReadOnlySpan<char> s, string[] patterns, MatchingFlags flag)
+        {
+            foreach (string pattern in patterns)
+            {
+                if (IsMatch(s, pattern, flag))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        /// <summary>
+        /// Indicates whether any of the specified expressions pattern matches this input string
+        /// </summary>
+        /// <param name="patterns">A simple expression pattern to match</param>
+        /// <param name="flag">An enumeration value that controls expression pattern matching</param>
+        /// <returns>True if the expression pattern matches, false otherwise</returns>
+        /// <remarks>The expression pattern allows for wildcard characters ? (single match) * (matches a range) and
+        /// character ranges [] (any character in the sequence). Those characters need to be escaped in order to match
+        /// as a single character instead.
+        /// 
+        /// Pattern must be all lower case in order to allow MatchingFlags.IgnoreCase and MatchingFlags.Invariant
+        /// to work</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsMatch(this string s, string[] patterns, MatchingFlags flag)
+        {
+            foreach (string pattern in patterns)
+            {
+                if (IsMatch(s.AsSpan(), pattern, flag))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        /// <summary>
         /// Indicates whether the specified expression pattern matches this input string
         /// </summary>
         /// <param name="pattern">A simple expression pattern to match</param>
         /// <returns>True if the expression pattern matches, false otherwise</returns>
-        /// <remarks>The expression pattern allows for wildcard characters ? (single match) and * (matches a range). Those
-        /// characters need to be escaped in order to match as a single character instead</remarks>
+        /// <remarks>The expression pattern allows for wildcard characters ? (single match) * (matches a range) and
+        /// character ranges [] (any character in the sequence). Those characters need to be escaped in order to match
+        /// as a single character instead</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsMatch(this ReadOnlySpan<char> s, ReadOnlySpan<char> pattern)
         {
@@ -141,12 +247,53 @@ namespace System
         /// </summary>
         /// <param name="pattern">A simple expression pattern to match</param>
         /// <returns>True if the expression pattern matches, false otherwise</returns>
-        /// <remarks>The expression pattern allows for wildcard characters ? (single match) and * (matches a range). Those
-        /// characters need to be escaped in order to match as a single character instead</remarks>
+        /// <remarks>The expression pattern allows for wildcard characters ? (single match) * (matches a range) and
+        /// character ranges [] (any character in the sequence). Those characters need to be escaped in order to match
+        /// as a single character instead</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsMatch(this string s, string pattern)
         {
             return  IsMatch(s.AsSpan(), pattern, MatchingFlags.Default);
+        }
+        /// <summary>
+        /// Indicates whether any of the specified expressions pattern matches this input string
+        /// </summary>
+        /// <param name="patterns">A simple expression pattern to match</param>
+        /// <returns>True if the expression pattern matches, false otherwise</returns>
+        /// <remarks>The expression pattern allows for wildcard characters ? (single match) * (matches a range) and
+        /// character ranges [] (any character in the sequence). Those characters need to be escaped in order to match
+        /// as a single character instead</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsMatch(this ReadOnlySpan<char> s, string[] patterns)
+        {
+            foreach (string pattern in patterns)
+            {
+                if (IsMatch(s, pattern))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        /// <summary>
+        /// Indicates whether any of the specified expressions pattern matches this input string
+        /// </summary>
+        /// <param name="patterns">A simple expression pattern to match</param>
+        /// <returns>True if the expression pattern matches, false otherwise</returns>
+        /// <remarks>The expression pattern allows for wildcard characters ? (single match) * (matches a range) and
+        /// character ranges [] (any character in the sequence). Those characters need to be escaped in order to match
+        /// as a single character instead</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsMatch(this string s, string[] patterns)
+        {
+            foreach (string pattern in patterns)
+            {
+                if (IsMatch(s.AsSpan(), pattern))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

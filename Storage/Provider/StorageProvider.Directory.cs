@@ -22,7 +22,6 @@ namespace Soe.Storage
                 {
                     File.Delete(file);
                 }
-
                 if (recursive)
                 {
                     foreach (string directory in Directory.GetDirectories(target))
@@ -49,7 +48,10 @@ namespace Soe.Storage
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool IPathProvider.Exists(string target, string searchPattern, SearchOption searchOptions)
         {
-            return Directories.GetDirectories(target, searchPattern, searchOptions).MoveNext();
+            using (StorageIterator iterator = Directories.GetDirectories(target, searchPattern, searchOptions))
+            {
+                return iterator.MoveNext();
+            }
         }
 
         /// <inheritdoc/>

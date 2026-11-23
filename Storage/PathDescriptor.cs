@@ -62,6 +62,15 @@ namespace Soe.Storage
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return provider.Exists(identifier); }
         }
+
+        /// <summary>
+        /// Gets the length of the full qualified name of the descriptor object
+        /// </summary>
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return FullName.Length; }
+        }
         
         /// <summary>
         /// Initializes this descriptor object with the provided target
