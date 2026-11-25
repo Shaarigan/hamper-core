@@ -402,8 +402,6 @@ namespace Soe.Collections.HashSet
             where Container : struct, IHashContainer<T>
         {
             capacity = capacity.NextPowerOfTwo();
-            
-            int moduloMask = (capacity - 1);
             count = 0;
 
             int length = items.Length;
@@ -413,6 +411,13 @@ namespace Soe.Collections.HashSet
                 items.AsSpan().CopyTo(tmp);
                 items.Clear();
                 items.Resize(capacity);
+
+                if (items.Length.NextPowerOfTwo() != items.Length)
+                {
+                    // Array length is not ^2
+                    throw new InvalidOperationException();
+                }
+                int moduloMask = (capacity - 1);
                 if (length > 0)
                 {
                     // Reinsert existing elements
@@ -718,7 +723,6 @@ namespace Soe.Collections.HashSet
         public void Reserve(int capacity)
         {
             capacity = capacity.NextPowerOfTwo();
-            moduloMask = (capacity - 1);
             count = 0;
 
             int length = items.Length;
@@ -728,6 +732,13 @@ namespace Soe.Collections.HashSet
                 items.AsSpan().CopyTo(tmp);
                 items.Clear();
                 items.Resize(capacity);
+                
+                if (items.Length.NextPowerOfTwo() != items.Length)
+                {
+                    // Array length is not ^2
+                    throw new InvalidOperationException();
+                }
+                else moduloMask = (items.Length - 1);
                 if (length > 0)
                 {
                     // Reinsert existing elements
