@@ -67,9 +67,12 @@ namespace Soe.Collections.HashSet
                     Grow<T, ArrayBuffer, Container>(ref items, ref count, ref version);
                     goto Head;
                 }
-
+                
+                ref Container item = ref items[Emplace<T, ArrayBuffer, Container>(ref items, index, distance)];
                 version++;
-                return ref items[Emplace<T, ArrayBuffer, Container>(ref items, ref count, index, distance)];
+                count++;
+
+                return ref item;
             }
             else return ref result.Value;
         }
@@ -98,9 +101,12 @@ namespace Soe.Collections.HashSet
                     Grow<T, ArrayBuffer, Container>(ref items, ref count, ref version);
                     goto Head;
                 }
-
+                
+                ref Container item = ref items[Emplace<T, ArrayBuffer, Container>(ref items, index, distance)];
                 version++;
-                return ref items[Emplace<T, ArrayBuffer, Container>(ref items, ref count, index, distance)];
+                count++;
+
+                return ref item;
             }
             else return ref result.Value;
         }
@@ -130,13 +136,16 @@ namespace Soe.Collections.HashSet
                     Grow<T, ArrayBuffer, Container>(ref items, ref count, ref version);
                     goto Head;
                 }
-
+                
+                ref Container item = ref items[Emplace<T, ArrayBuffer, Container>(ref items, index, distance)];
                 version++;
-                return ref items[Emplace<T, ArrayBuffer, Container>(ref items, ref count, index, distance)];
+                count++;
+
+                return ref item;
             }
             else return ref result.Value;
         }
-        static int Emplace<T, ArrayBuffer, Container>(ref ArrayBuffer items, ref int count, int index, int distance)
+        static int Emplace<T, ArrayBuffer, Container>(ref ArrayBuffer items, int index, int distance)
             where ArrayBuffer : struct, IArrayAccessor<Container>
             where Container : struct, IHashContainer<T>
         {
@@ -144,8 +153,6 @@ namespace Soe.Collections.HashSet
             if (!items[index].IsValid)
             {
                 // Insert as slot is already empty
-                
-                count++;
                 return index;
             }
             else
@@ -175,7 +182,6 @@ namespace Soe.Collections.HashSet
                         // Free slot found to put the element into
                         if (!items[index].IsValid)
                         {
-                            count++;
                             if (element.IsValid)
                             {
                                 Swap<T, Container>(ref items[index], ref element);
@@ -409,8 +415,8 @@ namespace Soe.Collections.HashSet
             try
             {
                 items.AsSpan().CopyTo(tmp);
-                items.Clear();
                 items.Resize(capacity);
+                items.Clear();
 
                 if (items.Length.NextPowerOfTwo() != items.Length)
                 {
@@ -425,8 +431,9 @@ namespace Soe.Collections.HashSet
                     {
                         if (tmp[i].IsValid)
                         {
-                            int index = Emplace<T, ArrayBuffer, Container>(ref items, ref count, tmp[i].Hash & moduloMask, 0);
+                            int index = Emplace<T, ArrayBuffer, Container>(ref items, tmp[i].Hash & moduloMask, 0);
                             items[index] = tmp[i];
+                            count++;
                         }
                     }
                 }
@@ -537,9 +544,12 @@ namespace Soe.Collections.HashSet
                     Grow();
                     goto Head;
                 }
-
+                
+                ref Container item = ref items[Emplace(index, distance)];
                 version++;
-                return ref items[Emplace(index, distance)];
+                count++;
+
+                return ref item;
             }
             else return ref result.Value;
         }
@@ -559,8 +569,6 @@ namespace Soe.Collections.HashSet
             if (!items[index].IsValid)
             {
                 // Insert as slot is already empty
-                
-                count++;
                 return index;
             }
             else
@@ -590,7 +598,6 @@ namespace Soe.Collections.HashSet
                         // Free slot found to put the element into
                         if (!items[index].IsValid)
                         {
-                            count++;
                             if (element.IsValid)
                             {
                                 Swap(ref items[index], ref element);
@@ -730,8 +737,8 @@ namespace Soe.Collections.HashSet
             try
             {
                 items.AsSpan().CopyTo(tmp);
-                items.Clear();
                 items.Resize(capacity);
+                items.Clear();
                 
                 if (items.Length.NextPowerOfTwo() != items.Length)
                 {
@@ -748,6 +755,7 @@ namespace Soe.Collections.HashSet
                         {
                             int index = Emplace(tmp[i].Hash & moduloMask, 0);
                             items[index] = tmp[i];
+                            count++;
                         }
                     }
                 }
